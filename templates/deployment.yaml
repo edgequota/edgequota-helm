@@ -1,0 +1,231 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "edgequota.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "edgequota.labels" . | nindent 4 }}
+  {{- with .Values.deployment.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  revisionHistoryLimit: {{ .Values.deployment.revisionHistoryLimit | default 5 }}
+  {{- with .Values.deployment.strategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "edgequota.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "edgequota.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      annotations:
+        {{- include "edgequota.checksumAnnotations" . | nindent 8 }}
+        {{- if .Values.metrics.enabled }}
+        prometheus.io/scrape: "true"
+        prometheus.io/port: {{ include "edgequota.adminPort" . | quote }}
+        prometheus.io/path: "/metrics"
+        {{- end }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "edgequota.serviceAccountName" . }}
+      automountServiceAccountToken: {{ .Values.serviceAccount.automountServiceAccountToken }}
+      {{- if .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- end }}
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds | default 60 }}
+      {{- with .Values.initContainers }}
+      initContainers:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: edgequota
+          image: {{ include "edgequota.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.containerSecurityContext }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          {{- end }}
+          args:
+            - --config
+            - {{ include "edgequota.configPath" . }}/config.yaml
+          {{- with .Values.extraArgs }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: proxy
+              containerPort: {{ include "edgequota.proxyPort" . }}
+              protocol: TCP
+            {{- if and .Values.edgequota.server.tls.enabled .Values.edgequota.server.tls.http3Enabled }}
+            - name: proxy-udp
+              containerPort: {{ include "edgequota.proxyPort" . }}
+              protocol: UDP
+            {{- end }}
+            - name: admin
+              containerPort: {{ include "edgequota.adminPort" . }}
+              protocol: TCP
+          env:
+            {{- if .Values.secrets.create }}
+            {{- if .Values.secrets.redisPassword }}
+            - name: EDGEQUOTA_REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.existingSecret | default (include "edgequota.fullname" .) }}
+                  key: redis-password
+            {{- end }}
+            {{- if .Values.secrets.redisUsername }}
+            - name: EDGEQUOTA_REDIS_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.existingSecret | default (include "edgequota.fullname" .) }}
+                  key: redis-username
+            {{- end }}
+            {{- if .Values.secrets.redisSentinelPassword }}
+            - name: EDGEQUOTA_REDIS_SENTINEL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.existingSecret | default (include "edgequota.fullname" .) }}
+                  key: redis-sentinel-password
+            {{- end }}
+            {{- if .Values.secrets.redisSentinelUsername }}
+            - name: EDGEQUOTA_REDIS_SENTINEL_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.existingSecret | default (include "edgequota.fullname" .) }}
+                  key: redis-sentinel-username
+            {{- end }}
+            {{- if .Values.secrets.cacheRedisPassword }}
+            - name: EDGEQUOTA_CACHE_REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.existingSecret | default (include "edgequota.fullname" .) }}
+                  key: cache-redis-password
+            {{- end }}
+            {{- if .Values.secrets.cacheRedisUsername }}
+            - name: EDGEQUOTA_CACHE_REDIS_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.existingSecret | default (include "edgequota.fullname" .) }}
+                  key: cache-redis-username
+            {{- end }}
+            {{- else if .Values.secrets.existingSecret }}
+            {{- range .Values.secrets.existingSecretMappings }}
+            - name: {{ .envVar }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.secrets.existingSecret }}
+                  key: {{ .key }}
+            {{- end }}
+            {{- end }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- with .Values.extraEnvFrom }}
+          envFrom:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          startupProbe:
+            httpGet:
+              path: /startz
+              port: admin
+            {{- with .Values.startupProbe }}
+            initialDelaySeconds: {{ .initialDelaySeconds | default 1 }}
+            periodSeconds: {{ .periodSeconds | default 2 }}
+            timeoutSeconds: {{ .timeoutSeconds | default 3 }}
+            failureThreshold: {{ .failureThreshold | default 30 }}
+            successThreshold: {{ .successThreshold | default 1 }}
+            {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: admin
+            {{- with .Values.livenessProbe }}
+            initialDelaySeconds: {{ .initialDelaySeconds | default 0 }}
+            periodSeconds: {{ .periodSeconds | default 10 }}
+            timeoutSeconds: {{ .timeoutSeconds | default 3 }}
+            failureThreshold: {{ .failureThreshold | default 3 }}
+            successThreshold: {{ .successThreshold | default 1 }}
+            {{- end }}
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: admin
+            {{- with .Values.readinessProbe }}
+            initialDelaySeconds: {{ .initialDelaySeconds | default 0 }}
+            periodSeconds: {{ .periodSeconds | default 5 }}
+            timeoutSeconds: {{ .timeoutSeconds | default 3 }}
+            failureThreshold: {{ .failureThreshold | default 3 }}
+            successThreshold: {{ .successThreshold | default 1 }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: {{ include "edgequota.configPath" . }}
+              readOnly: true
+            {{- if .Values.edgequota.server.tls.enabled }}
+            - name: tls
+              mountPath: {{ include "edgequota.tlsPath" . }}
+              readOnly: true
+            {{- end }}
+            {{- with .Values.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        {{- with .Values.sidecars }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "edgequota.fullname" . }}
+        {{- if .Values.edgequota.server.tls.enabled }}
+        - name: tls
+          secret:
+            secretName: {{ .Values.edgequota.server.tls.existingSecret | default (printf "%s-tls" (include "edgequota.fullname" .)) }}
+            defaultMode: 0440
+        {{- end }}
+        {{- with .Values.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.dnsPolicy }}
+      dnsPolicy: {{ . }}
+      {{- end }}
+      {{- with .Values.dnsConfig }}
+      dnsConfig:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.priorityClassName }}
+      priorityClassName: {{ . }}
+      {{- end }}

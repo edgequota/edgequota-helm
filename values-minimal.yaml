@@ -1,0 +1,32 @@
+# =============================================================================
+# EdgeQuota — Minimal Values
+# =============================================================================
+# Bare-minimum configuration to get EdgeQuota running.
+# Suitable for development, local testing, or non-critical environments.
+#
+# Prerequisites:
+#   - A Redis instance reachable at the configured endpoint.
+#
+# Usage:
+#   helm install edgequota ./edgequota-helm -f values-minimal.yaml
+# =============================================================================
+
+replicaCount: 1
+
+edgequota:
+  backend:
+    url: "http://my-backend-service:8080"
+
+  redis:
+    endpoints: "redis:6379"
+    mode: "single"
+
+  rateLimit:
+    average: 100
+    burst: 20
+    period: "1s"
+
+# Redis password — for production, use secrets.existingSecret instead
+secrets:
+  create: true
+  redisPassword: "changeme"

@@ -1,0 +1,42 @@
+EdgeQuota has been deployed successfully!
+
+Release: {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+
+{{- if .Values.ingress.enabled }}
+
+Ingress is enabled. Access EdgeQuota at:
+{{- range $host := .Values.ingress.hosts }}
+  {{- range .paths }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ $host.host }}{{ .path }}
+  {{- end }}
+{{- end }}
+{{- else }}
+
+To access EdgeQuota proxy, run:
+  kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "edgequota.fullname" . }} {{ .Values.service.port | default 8080 }}:{{ .Values.service.port | default 8080 }}
+
+{{- end }}
+
+Admin/metrics endpoint:
+  kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "edgequota.fullname" . }} {{ .Values.service.adminPort | default 9090 }}:{{ .Values.service.adminPort | default 9090 }}
+
+  Health:    http://localhost:{{ .Values.service.adminPort | default 9090 }}/healthz
+  Ready:     http://localhost:{{ .Values.service.adminPort | default 9090 }}/readyz
+  Metrics:   http://localhost:{{ .Values.service.adminPort | default 9090 }}/metrics
+
+{{- if .Values.autoscaling.enabled }}
+
+HPA is enabled ({{ .Values.autoscaling.minReplicas }}-{{ .Values.autoscaling.maxReplicas }} replicas).
+{{- else }}
+
+Running {{ .Values.replicaCount }} replica(s). Consider enabling HPA for production.
+{{- end }}
+
+{{- if not .Values.secrets.create }}
+{{- if not .Values.secrets.existingSecret }}
+
+WARNING: No Redis secret configured. Set secrets.create=true with credentials,
+         or point secrets.existingSecret to a pre-existing Secret.
+{{- end }}
+{{- end }}

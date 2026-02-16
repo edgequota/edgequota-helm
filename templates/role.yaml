@@ -1,0 +1,26 @@
+{{- if and .Values.rbac.create .Values.serviceAccount.create -}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "edgequota.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "edgequota.labels" . | nindent 4 }}
+rules:
+  {{- if .Values.rbac.rules }}
+  {{- toYaml .Values.rbac.rules | nindent 2 }}
+  {{- else }}
+  # Minimal permissions: read own configmap and secrets
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list", "watch"]
+    resourceNames:
+      - {{ include "edgequota.fullname" . }}
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list", "watch"]
+    resourceNames:
+      - {{ include "edgequota.fullname" . }}
+      - {{ .Values.edgequota.server.tls.existingSecret | default (printf "%s-tls" (include "edgequota.fullname" .)) }}
+  {{- end }}
+{{- end }}

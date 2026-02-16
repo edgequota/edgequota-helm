@@ -1,0 +1,247 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "edgequota.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "edgequota.labels" . | nindent 4 }}
+data:
+  config.yaml: |
+    # --- Server (proxy) ---
+    server:
+      address: ":{{ include "edgequota.proxyPort" . }}"
+      {{- with .Values.edgequota.server.readTimeout }}
+      read_timeout: {{ . | quote }}
+      {{- end }}
+      {{- with .Values.edgequota.server.writeTimeout }}
+      write_timeout: {{ . | quote }}
+      {{- end }}
+      {{- with .Values.edgequota.server.idleTimeout }}
+      idle_timeout: {{ . | quote }}
+      {{- end }}
+      {{- with .Values.edgequota.server.drainTimeout }}
+      drain_timeout: {{ . | quote }}
+      {{- end }}
+      {{- if .Values.edgequota.server.maxWebsocketConnsPerKey }}
+      max_websocket_conns_per_key: {{ .Values.edgequota.server.maxWebsocketConnsPerKey }}
+      {{- end }}
+      {{- if .Values.edgequota.server.tls.enabled }}
+      tls:
+        enabled: true
+        cert_file: "{{ include "edgequota.tlsPath" . }}/tls.crt"
+        key_file: "{{ include "edgequota.tlsPath" . }}/tls.key"
+        {{- with .Values.edgequota.server.tls.minVersion }}
+        min_version: {{ . | quote }}
+        {{- end }}
+        {{- if .Values.edgequota.server.tls.http3Enabled }}
+        http3_enabled: true
+        {{- end }}
+      {{- end }}
+
+    # --- Admin ---
+    admin:
+      address: ":{{ include "edgequota.adminPort" . }}"
+      {{- with .Values.edgequota.admin.readTimeout }}
+      read_timeout: {{ . | quote }}
+      {{- end }}
+      {{- with .Values.edgequota.admin.writeTimeout }}
+      write_timeout: {{ . | quote }}
+      {{- end }}
+      {{- with .Values.edgequota.admin.idleTimeout }}
+      idle_timeout: {{ . | quote }}
+      {{- end }}
+
+    # --- Backend ---
+    {{- if .Values.edgequota.backend.url }}
+    backend:
+      url: {{ .Values.edgequota.backend.url | quote }}
+      {{- with .Values.edgequota.backend.timeout }}
+      timeout: {{ . | quote }}
+      {{- end }}
+      {{- with .Values.edgequota.backend.maxIdleConns }}
+      max_idle_conns: {{ . }}
+      {{- end }}
+      {{- with .Values.edgequota.backend.idleConnTimeout }}
+      idle_conn_timeout: {{ . | quote }}
+      {{- end }}
+      {{- if .Values.edgequota.backend.tlsInsecureSkipVerify }}
+      tls_insecure_skip_verify: true
+      {{- end }}
+      {{- with .Values.edgequota.backend.transport }}
+      transport:
+        {{- with .dialTimeout }}
+        dial_timeout: {{ . | quote }}
+        {{- end }}
+        {{- with .dialKeepAlive }}
+        dial_keep_alive: {{ . | quote }}
+        {{- end }}
+        {{- with .tlsHandshakeTimeout }}
+        tls_handshake_timeout: {{ . | quote }}
+        {{- end }}
+        {{- with .h2ReadIdleTimeout }}
+        h2_read_idle_timeout: {{ . | quote }}
+        {{- end }}
+        {{- with .h2PingTimeout }}
+        h2_ping_timeout: {{ . | quote }}
+        {{- end }}
+        {{- with .websocketDialTimeout }}
+        websocket_dial_timeout: {{ . | quote }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+
+    # --- Redis ---
+    redis:
+      endpoints: {{ .Values.edgequota.redis.endpoints | quote }}
+      {{- with .Values.edgequota.redis.mode }}
+      mode: {{ . | quote }}
+      {{- end }}
+      {{- with .Values.edgequota.redis.masterName }}
+      master_name: {{ . | quote }}
+      {{- end }}
+      {{- with .Values.edgequota.redis.db }}
+      db: {{ . }}
+      {{- end }}
+      {{- with .Values.edgequota.redis.poolSize }}
+      pool_size: {{ . }}
+      {{- end }}
+      {{- with .Values.edgequota.redis.dialTimeout }}
+      dial_timeout: {{ . | quote }}
+      {{- end }}
+      {{- with .Values.edgequota.redis.readTimeout }}
+      read_timeout: {{ . | quote }}
+      {{- end }}
+      {{- with .Values.edgequota.redis.writeTimeout }}
+      write_timeout: {{ . | quote }}
+      {{- end }}
+      {{- if .Values.edgequota.redis.tls.enabled }}
+      tls:
+        enabled: true
+        {{- if .Values.edgequota.redis.tls.insecureSkipVerify }}
+        insecure_skip_verify: true
+        {{- end }}
+      {{- end }}
+
+    {{- if .Values.edgequota.cacheRedis.enabled }}
+    # --- Cache Redis (optional dedicated instance) ---
+    cache_redis:
+      endpoints: {{ .Values.edgequota.cacheRedis.endpoints | quote }}
+      {{- with .Values.edgequota.cacheRedis.mode }}
+      mode: {{ . | quote }}
+      {{- end }}
+      {{- with .Values.edgequota.cacheRedis.masterName }}
+      master_name: {{ . | quote }}
+      {{- end }}
+      {{- with .Values.edgequota.cacheRedis.db }}
+      db: {{ . }}
+      {{- end }}
+      {{- with .Values.edgequota.cacheRedis.poolSize }}
+      pool_size: {{ . }}
+      {{- end }}
+      {{- if .Values.edgequota.cacheRedis.tls.enabled }}
+      tls:
+        enabled: true
+        {{- if .Values.edgequota.cacheRedis.tls.insecureSkipVerify }}
+        insecure_skip_verify: true
+        {{- end }}
+      {{- end }}
+    {{- end }}
+
+    # --- Rate Limiting ---
+    rate_limit:
+      {{- with .Values.edgequota.rateLimit.average }}
+      average: {{ . }}
+      {{- end }}
+      {{- with .Values.edgequota.rateLimit.burst }}
+      burst: {{ . }}
+      {{- end }}
+      {{- with .Values.edgequota.rateLimit.period }}
+      period: {{ . | quote }}
+      {{- end }}
+      {{- with .Values.edgequota.rateLimit.failurePolicy }}
+      failure_policy: {{ . | quote }}
+      {{- end }}
+      {{- with .Values.edgequota.rateLimit.failureCode }}
+      failure_code: {{ . }}
+      {{- end }}
+      {{- with .Values.edgequota.rateLimit.minTTL }}
+      min_ttl: {{ . | quote }}
+      {{- end }}
+      {{- if .Values.edgequota.rateLimit.keyStrategy }}
+      key_strategy:
+        {{- with .Values.edgequota.rateLimit.keyStrategy.type }}
+        type: {{ . | quote }}
+        {{- end }}
+        {{- with .Values.edgequota.rateLimit.keyStrategy.headerName }}
+        header_name: {{ . | quote }}
+        {{- end }}
+        {{- if .Values.edgequota.rateLimit.keyStrategy.pathPrefix }}
+        path_prefix: true
+        {{- end }}
+        {{- with .Values.edgequota.rateLimit.keyStrategy.trustedProxies }}
+        trusted_proxies:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        {{- with .Values.edgequota.rateLimit.keyStrategy.trustedIPDepth }}
+        trusted_ip_depth: {{ . }}
+        {{- end }}
+      {{- end }}
+      {{- if .Values.edgequota.rateLimit.external }}
+      external:
+        {{- toYaml .Values.edgequota.rateLimit.external | nindent 8 }}
+      {{- end }}
+
+    # --- Auth (optional) ---
+    {{- if .Values.edgequota.auth.enabled }}
+    auth:
+      enabled: true
+      {{- with .Values.edgequota.auth.timeout }}
+      timeout: {{ . | quote }}
+      {{- end }}
+      {{- with .Values.edgequota.auth.failurePolicy }}
+      failure_policy: {{ . | quote }}
+      {{- end }}
+      {{- if .Values.edgequota.auth.http.url }}
+      http:
+        url: {{ .Values.edgequota.auth.http.url | quote }}
+      {{- end }}
+      {{- if .Values.edgequota.auth.grpc.address }}
+      grpc:
+        address: {{ .Values.edgequota.auth.grpc.address | quote }}
+        {{- if .Values.edgequota.auth.grpc.tls.enabled }}
+        tls:
+          enabled: true
+          {{- with .Values.edgequota.auth.grpc.tls.caFile }}
+          ca_file: {{ . | quote }}
+          {{- end }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+
+    # --- Logging ---
+    logging:
+      {{- with .Values.edgequota.logging.level }}
+      level: {{ . | quote }}
+      {{- end }}
+      {{- with .Values.edgequota.logging.format }}
+      format: {{ . | quote }}
+      {{- end }}
+
+    # --- Tracing (optional) ---
+    {{- if .Values.edgequota.tracing.enabled }}
+    tracing:
+      enabled: true
+      {{- with .Values.edgequota.tracing.endpoint }}
+      endpoint: {{ . | quote }}
+      {{- end }}
+      {{- with .Values.edgequota.tracing.serviceName }}
+      service_name: {{ . | quote }}
+      {{- end }}
+      {{- with .Values.edgequota.tracing.sampleRate }}
+      sample_rate: {{ . }}
+      {{- end }}
+    {{- end }}
+
+  {{- with .Values.edgequota.extraConfig }}
+  {{- toYaml . | nindent 4 }}
+  {{- end }}

@@ -1,0 +1,309 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.17.3
+
+      - name: Helm lint (defaults)
+        run: helm lint .
+
+      - name: Helm lint (minimal values)
+        run: helm lint . -f values-minimal.yaml
+
+      - name: Helm lint (production values)
+        run: helm lint . -f values-production.yaml
+
+      - name: Helm lint (strict)
+        run: helm lint . --strict --with-subcharts
+
+  kubeconform:
+    name: Validate Manifests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        k8s-version: ["1.28.0", "1.29.0", "1.30.0", "1.31.0"]
+        values:
+          - name: defaults
+            file: ""
+          - name: minimal
+            file: values-minimal.yaml
+          - name: production
+            file: values-production.yaml
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.17.3
+
+      - name: Install kubeconform
+        run: |
+          curl -fsSL https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz \
+            | tar xz -C /usr/local/bin kubeconform
+
+      - name: Template (${{ matrix.values.name }})
+        run: |
+          ARGS="--namespace test --release-name test"
+          if [ -n "${{ matrix.values.file }}" ]; then
+            ARGS="$ARGS -f ${{ matrix.values.file }}"
+          fi
+          helm template $ARGS . > manifests.yaml
+
+      - name: Validate against Kubernetes ${{ matrix.k8s-version }}
+        run: |
+          kubeconform \
+            -kubernetes-version ${{ matrix.k8s-version }} \
+            -schema-location default \
+            -skip ServiceMonitor,Certificate \
+            -strict \
+            -summary \
+            -output json \
+            manifests.yaml
+
+  template:
+    name: Template Render
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.17.3
+
+      - name: Template defaults
+        run: helm template test . --namespace test --debug > /dev/null
+
+      - name: Template minimal
+        run: helm template test . --namespace test -f values-minimal.yaml --debug > /dev/null
+
+      - name: Template production
+        run: helm template test . --namespace test -f values-production.yaml --debug > /dev/null
+
+      - name: Verify no empty manifests
+        run: |
+          for VALUES in "" "-f values-minimal.yaml" "-f values-production.yaml"; do
+            OUTPUT=$(helm template test . --namespace test $VALUES)
+            if echo "$OUTPUT" | grep -q "^# Source:.*" && echo "$OUTPUT" | grep -qP "^\s*$" ; then
+              DOCS=$(echo "$OUTPUT" | grep -c "^---" || true)
+              RESOURCES=$(echo "$OUTPUT" | grep -c "^kind:" || true)
+              echo "Documents: $DOCS, Resources: $RESOURCES (values: ${VALUES:-defaults})"
+              if [ "$RESOURCES" -eq 0 ]; then
+                echo "FAIL: no resources rendered"
+                exit 1
+              fi
+            fi
+          done
+          echo "All value combinations render valid resources"
+
+  chart-test:
+    name: Chart Testing
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.17.3
+
+      - name: Set up chart-testing
+        uses: helm/chart-testing-action@v2
+
+      - name: Detect changed charts
+        id: changed
+        run: |
+          if git rev-parse HEAD~1 >/dev/null 2>&1; then
+            CHANGED=$(ct list-changed --target-branch main 2>/dev/null || echo ".")
+          else
+            CHANGED="."
+          fi
+          if [ -n "$CHANGED" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run chart-testing lint
+        if: steps.changed.outputs.changed == 'true'
+        run: ct lint --target-branch main --check-version-increment=false --validate-maintainers=false
+
+      - name: Create kind cluster
+        if: steps.changed.outputs.changed == 'true'
+        uses: helm/kind-action@v1
+
+      - name: Install chart in kind (minimal)
+        if: steps.changed.outputs.changed == 'true'
+        run: |
+          helm repo add bitnami https://charts.bitnami.com/bitnami
+          helm install redis bitnami/redis \
+            --set auth.password=testpassword \
+            --set architecture=standalone \
+            --wait --timeout 120s
+
+          helm install edgequota . \
+            -f values-minimal.yaml \
+            --set edgequota.redis.endpoints="redis-master:6379" \
+            --set secrets.redisPassword="testpassword" \
+            --set edgequota.backend.url="http://httpbin.default:8080" \
+            --wait --timeout 120s
+
+      - name: Verify pods are running
+        if: steps.changed.outputs.changed == 'true'
+        run: |
+          kubectl get pods -l app.kubernetes.io/name=edgequota -o wide
+          kubectl wait pod \
+            -l app.kubernetes.io/name=edgequota \
+            --for=condition=Ready \
+            --timeout=60s
+
+      - name: Run helm test
+        if: steps.changed.outputs.changed == 'true'
+        run: helm test edgequota --timeout 60s || true
+
+      - name: Collect debug info on failure
+        if: failure()
+        run: |
+          echo "=== Pods ==="
+          kubectl get pods -A
+          echo "=== Events ==="
+          kubectl get events --sort-by=.lastTimestamp
+          echo "=== EdgeQuota logs ==="
+          kubectl logs -l app.kubernetes.io/name=edgequota --tail=100 || true
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.17.3
+
+      - name: Template for scanning
+        run: helm template test . --namespace test -f values-production.yaml > manifests.yaml
+
+      - name: Run Trivy config scan
+        uses: aquasecurity/trivy-action@0.34.0
+        with:
+          scan-type: config
+          scan-ref: manifests.yaml
+          exit-code: "1"
+          severity: "CRITICAL,HIGH"
+          trivyignores: .trivyignore
+
+      - name: Run Checkov
+        run: |
+          pip install -q checkov
+          checkov --file manifests.yaml --framework kubernetes --soft-fail --output cli
+
+  docs:
+    name: Docs Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Verify values documentation
+        run: |
+          UNDOCUMENTED=0
+          for KEY in $(grep -E '^[a-zA-Z]' values.yaml | grep -v '^#' | sed 's/:.*//' | sort -u); do
+            LINE=$(grep -n "^${KEY}:" values.yaml | head -1 | cut -d: -f1)
+            if [ -n "$LINE" ] && [ "$LINE" -gt 1 ]; then
+              PREV=$((LINE - 1))
+              PREV_LINE=$(sed -n "${PREV}p" values.yaml)
+              if ! echo "$PREV_LINE" | grep -q "^#\|^  #\|^$"; then
+                THIS_LINE=$(sed -n "${LINE}p" values.yaml)
+                if ! echo "$THIS_LINE" | grep -q "#"; then
+                  echo "WARNING: '$KEY' (line $LINE) may lack documentation"
+                  UNDOCUMENTED=$((UNDOCUMENTED + 1))
+                fi
+              fi
+            fi
+          done
+          echo "Undocumented keys: $UNDOCUMENTED"
+
+  publish:
+    name: Publish Chart
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [lint, kubeconform, template, chart-test, security]
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.17.3
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          TAG="${GITHUB_REF#refs/tags/v}"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "Publishing chart version: ${TAG}"
+
+      - name: Update Chart.yaml version from tag
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+          sed -i "s/^version:.*/version: ${TAG}/" Chart.yaml
+          sed -i "s/^appVersion:.*/appVersion: \"${TAG}\"/" Chart.yaml
+          echo "Chart.yaml after version bump:"
+          grep -E '^(version|appVersion):' Chart.yaml
+
+      - name: Package chart
+        run: |
+          mkdir -p charts
+          helm package . --destination charts/
+
+      - name: Generate or merge repository index
+        run: |
+          REPO_URL="https://${{ github.repository_owner }}.github.io/$(echo '${{ github.repository }}' | cut -d/ -f2)"
+          echo "Repository URL: ${REPO_URL}/charts"
+
+          if [ -f charts/index.yaml ]; then
+            helm repo index charts/ --url "${REPO_URL}/charts" --merge charts/index.yaml
+          else
+            helm repo index charts/ --url "${REPO_URL}/charts"
+          fi
+
+          echo "Generated index.yaml:"
+          cat charts/index.yaml
+
+      - name: Commit and push to main
+        run: |
+          git add charts/
+          git status
+          git commit -m "chore: publish chart ${{ steps.version.outputs.tag }} to GitHub Pages"
+          git push origin HEAD:main

@@ -1,0 +1,6 @@
+# chart-testing configuration
+target-branch: main
+chart-dirs:
+  - .
+check-version-increment: false
+validate-maintainers: false

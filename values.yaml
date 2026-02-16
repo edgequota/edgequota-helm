@@ -1,0 +1,544 @@
+# =============================================================================
+# EdgeQuota Helm Chart - Default Values
+# =============================================================================
+# This file contains ALL configurable values with sensible defaults.
+# Override with values-minimal.yaml or values-production.yaml as a starting point.
+# =============================================================================
+
+# -- Override the chart name
+nameOverride: ""
+# -- Override the full release name
+fullnameOverride: ""
+# -- Labels applied to all resources
+commonLabels: {}
+
+# =============================================================================
+# Image
+# =============================================================================
+image:
+  # -- Container image registry (leave empty if repository includes registry)
+  registry: ""
+  # -- Container image repository
+  repository: ghcr.io/shoro-io/edgequota
+  # -- Container image tag (defaults to Chart.appVersion)
+  tag: ""
+  # -- Image pull policy
+  pullPolicy: IfNotPresent
+
+# -- Image pull secrets for private registries
+imagePullSecrets: []
+# - name: my-registry-secret
+
+# =============================================================================
+# Replicas
+# =============================================================================
+# -- Number of replicas (ignored if autoscaling.enabled=true)
+replicaCount: 1
+
+# =============================================================================
+# Deployment
+# =============================================================================
+deployment:
+  # -- Annotations added to the Deployment resource
+  annotations: {}
+  # -- Number of old ReplicaSets to retain
+  revisionHistoryLimit: 5
+  # -- Deployment update strategy
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+
+# =============================================================================
+# Service Account & RBAC
+# =============================================================================
+serviceAccount:
+  # -- Create a ServiceAccount
+  create: true
+  # -- ServiceAccount name (auto-generated if empty)
+  name: ""
+  # -- Annotations for the ServiceAccount (e.g., for IAM roles)
+  annotations: {}
+  # -- Mount the service account token in the pod
+  automountServiceAccountToken: false
+
+rbac:
+  # -- Create Role and RoleBinding
+  create: true
+  # -- Custom rules (overrides the default configmap-read rule)
+  rules: []
+
+# =============================================================================
+# Pod Configuration
+# =============================================================================
+# -- Labels added to pods
+podLabels: {}
+# -- Annotations added to pods
+podAnnotations: {}
+
+# -- Pod security context (applied to the pod)
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65534
+  runAsGroup: 65534
+  fsGroup: 65534
+  seccompProfile:
+    type: RuntimeDefault
+
+# -- Container security context (applied to the edgequota container)
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+# -- Termination grace period (should be >= drain_timeout + buffer)
+terminationGracePeriodSeconds: 60
+
+# -- Priority class name for pod scheduling priority
+priorityClassName: ""
+
+# -- DNS policy for the pod
+dnsPolicy: ""
+# -- Custom DNS configuration
+dnsConfig: {}
+
+# =============================================================================
+# Resources
+# =============================================================================
+resources:
+  requests:
+    cpu: 100m
+    memory: 64Mi
+  limits:
+    memory: 256Mi
+
+# =============================================================================
+# Probes
+# =============================================================================
+startupProbe:
+  initialDelaySeconds: 1
+  periodSeconds: 2
+  timeoutSeconds: 3
+  failureThreshold: 30
+  successThreshold: 1
+
+livenessProbe:
+  initialDelaySeconds: 0
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3
+  successThreshold: 1
+
+readinessProbe:
+  initialDelaySeconds: 0
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+  successThreshold: 1
+
+# =============================================================================
+# Service
+# =============================================================================
+service:
+  # -- Service type: ClusterIP, NodePort, LoadBalancer
+  type: ClusterIP
+  # -- Proxy port
+  port: 8080
+  # -- Admin/metrics port
+  adminPort: 9090
+  # -- Annotations for the Service (e.g., for cloud LB configuration)
+  annotations: {}
+  # -- Explicit cluster IP (set to "None" for headless)
+  clusterIP: ""
+  # -- Load balancer IP (cloud-specific)
+  loadBalancerIP: ""
+  # -- Restrict LB source ranges
+  loadBalancerSourceRanges: []
+  # -- External traffic policy: Cluster or Local
+  externalTrafficPolicy: ""
+  # -- NodePort value (only used when type=NodePort)
+  nodePort: ""
+  # -- IP family policy: SingleStack, PreferDualStack, RequireDualStack
+  ipFamilyPolicy: ""
+  # -- IP families
+  ipFamilies: []
+
+# =============================================================================
+# Ingress
+# =============================================================================
+ingress:
+  # -- Enable Ingress
+  enabled: false
+  # -- Ingress class name
+  className: ""
+  # -- Ingress annotations
+  annotations: {}
+  # Example for cert-manager + nginx:
+  #   cert-manager.io/cluster-issuer: letsencrypt-prod
+  #   nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  #   nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+  # -- Ingress hosts
+  hosts: []
+  # - host: edgequota.example.com
+  #   paths:
+  #     - path: /
+  #       pathType: Prefix
+  # -- Ingress TLS configuration
+  tls: []
+  # - secretName: edgequota-tls
+  #   hosts:
+  #     - edgequota.example.com
+
+# =============================================================================
+# Certificate (cert-manager)
+# =============================================================================
+certificate:
+  # -- Create a cert-manager Certificate resource
+  enabled: false
+  # -- Annotations on the Certificate
+  annotations: {}
+  # -- Secret name for the generated TLS cert (defaults to <fullname>-tls)
+  secretName: ""
+  # -- Certificate duration
+  duration: "2160h"  # 90 days
+  # -- Renew before expiration
+  renewBefore: "360h"  # 15 days
+  # -- Issuer reference
+  issuerRef:
+    name: ""
+    kind: ClusterIssuer
+    group: ""
+  # -- Common name
+  commonName: ""
+  # -- DNS names for the certificate
+  dnsNames: []
+  # -- IP addresses for the certificate
+  ipAddresses: []
+  # -- Private key configuration
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+
+# =============================================================================
+# Autoscaling (HPA)
+# =============================================================================
+autoscaling:
+  # -- Enable Horizontal Pod Autoscaler
+  enabled: false
+  # -- Minimum replicas
+  minReplicas: 3
+  # -- Maximum replicas
+  maxReplicas: 10
+  # -- Target CPU utilization percentage
+  targetCPUUtilizationPercentage: 70
+  # -- Target memory utilization percentage
+  targetMemoryUtilizationPercentage: ""
+  # -- Custom metrics for scaling
+  customMetrics: []
+  # -- HPA scaling behavior
+  behavior: {}
+  # -- Annotations on the HPA
+  annotations: {}
+
+# =============================================================================
+# Pod Disruption Budget
+# =============================================================================
+podDisruptionBudget:
+  # -- Enable PDB
+  enabled: false
+  # -- Minimum available pods (mutually exclusive with maxUnavailable)
+  minAvailable: ""
+  # -- Maximum unavailable pods
+  maxUnavailable: 1
+  # -- Unhealthy pod eviction policy (AlwaysAllow or IfHealthy)
+  unhealthyPodEvictionPolicy: ""
+
+# =============================================================================
+# Metrics & Monitoring
+# =============================================================================
+metrics:
+  # -- Enable Prometheus annotations on pods
+  enabled: true
+  serviceMonitor:
+    # -- Create a ServiceMonitor resource (requires prometheus-operator CRDs)
+    enabled: false
+    # -- Namespace for the ServiceMonitor (defaults to release namespace)
+    namespace: ""
+    # -- Additional labels for the ServiceMonitor
+    labels: {}
+    # -- Annotations on the ServiceMonitor
+    annotations: {}
+    # -- Scrape interval
+    interval: "30s"
+    # -- Scrape timeout
+    scrapeTimeout: "10s"
+    # -- Honor labels from the target
+    honorLabels: false
+    # -- Metric relabelings
+    metricRelabelings: []
+    # -- Relabelings
+    relabelings: []
+
+# =============================================================================
+# Network Policy
+# =============================================================================
+networkPolicy:
+  # -- Enable NetworkPolicy
+  enabled: false
+  # -- Sources allowed to reach the proxy port
+  ingressFrom: []
+  # Example: allow from any namespace
+  # - namespaceSelector: {}
+  # -- Sources allowed to reach the admin port
+  adminFrom: []
+  # Example: allow only monitoring namespace
+  # - namespaceSelector:
+  #     matchLabels:
+  #       kubernetes.io/metadata.name: monitoring
+  # -- Egress rule for Redis
+  redisEgress: {}
+  # Example:
+  #   ports:
+  #     - port: 6379
+  #       protocol: TCP
+  #   to:
+  #     - namespaceSelector:
+  #         matchLabels:
+  #           kubernetes.io/metadata.name: redis
+  # -- Egress rule for backend
+  backendEgress: {}
+  # -- Additional egress rules
+  extraEgress: []
+
+# =============================================================================
+# Secrets
+# =============================================================================
+secrets:
+  # -- Create a Secret resource with Redis credentials
+  create: false
+  # -- Annotations on the Secret
+  annotations: {}
+  # -- Use an existing secret instead of creating one
+  existingSecret: ""
+  # -- Mappings from existing secret keys to env vars (when using existingSecret)
+  existingSecretMappings: []
+  # - envVar: EDGEQUOTA_REDIS_PASSWORD
+  #   key: redis-password
+  # -- Redis password
+  redisPassword: ""
+  # -- Redis username
+  redisUsername: ""
+  # -- Redis Sentinel password
+  redisSentinelPassword: ""
+  # -- Redis Sentinel username
+  redisSentinelUsername: ""
+  # -- Cache Redis password
+  cacheRedisPassword: ""
+  # -- Cache Redis username
+  cacheRedisUsername: ""
+  # -- Extra key-value pairs to include in the Secret
+  extra: {}
+
+# =============================================================================
+# Scheduling
+# =============================================================================
+# -- Node selector
+nodeSelector: {}
+# -- Tolerations
+tolerations: []
+# -- Affinity rules
+affinity: {}
+# -- Topology spread constraints
+topologySpreadConstraints: []
+
+# =============================================================================
+# Extra / Escape Hatches
+# =============================================================================
+# -- Extra command-line arguments passed to the edgequota binary
+extraArgs: []
+# -- Extra environment variables
+extraEnv: []
+# -- Extra envFrom sources (ConfigMaps, Secrets)
+extraEnvFrom: []
+# -- Extra volume mounts for the edgequota container
+extraVolumeMounts: []
+# -- Extra volumes
+extraVolumes: []
+# -- Init containers
+initContainers: []
+# -- Sidecar containers
+sidecars: []
+
+# =============================================================================
+# EdgeQuota Application Configuration
+# =============================================================================
+# These values are rendered into the ConfigMap as config.yaml.
+# All durations are Go-style strings (e.g., "30s", "5m", "1h").
+edgequota:
+
+  # --- Server (proxy listener) ---
+  server:
+    # -- Proxy listen port
+    port: 8080
+    # -- HTTP read timeout
+    readTimeout: "30s"
+    # -- HTTP write timeout
+    writeTimeout: "30s"
+    # -- Connection idle timeout
+    idleTimeout: "120s"
+    # -- Graceful shutdown drain timeout
+    drainTimeout: "30s"
+    # -- Max WebSocket connections per rate-limit key (0 = unlimited)
+    maxWebsocketConnsPerKey: 0
+
+    tls:
+      # -- Enable TLS on the proxy listener
+      enabled: false
+      # -- Use an existing TLS secret (e.g., created by cert-manager)
+      existingSecret: ""
+      # -- Minimum TLS version ("1.2" or "1.3")
+      minVersion: ""
+      # -- Enable HTTP/3 (QUIC) — requires TLS
+      http3Enabled: false
+
+  # --- Admin server ---
+  admin:
+    # -- Admin listen port
+    port: 9090
+    # -- Admin read timeout
+    readTimeout: "5s"
+    # -- Admin write timeout
+    writeTimeout: "10s"
+    # -- Admin idle timeout
+    idleTimeout: "30s"
+
+  # --- Backend (upstream) ---
+  backend:
+    # -- Backend URL (required unless using external rate limit mode)
+    url: ""
+    # -- Request timeout to backend
+    timeout: "30s"
+    # -- Maximum idle connections
+    maxIdleConns: 100
+    # -- Idle connection timeout
+    idleConnTimeout: "90s"
+    # -- Skip TLS verification for backend
+    tlsInsecureSkipVerify: false
+    # -- Backend transport tuning
+    transport:
+      dialTimeout: ""
+      dialKeepAlive: ""
+      tlsHandshakeTimeout: ""
+      h2ReadIdleTimeout: ""
+      h2PingTimeout: ""
+      websocketDialTimeout: ""
+
+  # --- Redis ---
+  redis:
+    # -- Redis endpoint(s) (comma-separated for cluster/sentinel)
+    endpoints: "localhost:6379"
+    # -- Redis mode: single, replication, sentinel, cluster
+    mode: "single"
+    # -- Redis Sentinel master name (required for sentinel mode)
+    masterName: ""
+    # -- Redis database number
+    db: 0
+    # -- Connection pool size
+    poolSize: 10
+    # -- Dial timeout
+    dialTimeout: "5s"
+    # -- Read timeout
+    readTimeout: "3s"
+    # -- Write timeout
+    writeTimeout: "3s"
+    tls:
+      # -- Enable TLS for Redis connections
+      enabled: false
+      # -- Skip TLS verification
+      insecureSkipVerify: false
+
+  # --- Cache Redis (optional dedicated instance) ---
+  cacheRedis:
+    # -- Enable a separate Redis for external rate-limit cache
+    enabled: false
+    endpoints: ""
+    mode: "single"
+    masterName: ""
+    db: 0
+    poolSize: 10
+    tls:
+      enabled: false
+      insecureSkipVerify: false
+
+  # --- Rate Limiting ---
+  rateLimit:
+    # -- Requests per period (0 = disabled / passthrough)
+    average: 0
+    # -- Burst capacity
+    burst: 1
+    # -- Time period for the rate limit
+    period: "1s"
+    # -- Failure policy: passThrough, failClosed, inMemoryFallback
+    failurePolicy: "passThrough"
+    # -- HTTP status code on rate limit (4xx or 5xx)
+    failureCode: 429
+    # -- Minimum Redis key TTL
+    minTTL: ""
+    # -- Key extraction strategy
+    keyStrategy:
+      # -- Strategy type: clientIP, header, composite
+      type: "clientIP"
+      # -- Header name (required for header/composite)
+      headerName: ""
+      # -- Include path prefix in composite key
+      pathPrefix: false
+      # -- Trusted proxy CIDRs for X-Forwarded-For
+      trustedProxies: []
+      # -- X-Forwarded-For depth to use
+      trustedIPDepth: 0
+    # -- External rate-limit service configuration (raw YAML, passed through)
+    external: {}
+
+  # --- Auth (optional) ---
+  auth:
+    # -- Enable external auth
+    enabled: false
+    # -- Auth request timeout
+    timeout: "5s"
+    # -- Auth failure policy: failclosed, passthrough
+    failurePolicy: "failclosed"
+    http:
+      # -- Auth HTTP URL
+      url: ""
+    grpc:
+      # -- Auth gRPC address
+      address: ""
+      tls:
+        # -- Enable TLS for auth gRPC
+        enabled: false
+        # -- CA file for auth gRPC TLS
+        caFile: ""
+
+  # --- Logging ---
+  logging:
+    # -- Log level: debug, info, warn, error
+    level: "info"
+    # -- Log format: json, text
+    format: "json"
+
+  # --- Tracing (optional) ---
+  tracing:
+    # -- Enable OpenTelemetry tracing
+    enabled: false
+    # -- OTLP endpoint
+    endpoint: ""
+    # -- Service name for traces
+    serviceName: "edgequota"
+    # -- Sampling rate (0.0 to 1.0)
+    sampleRate: 0.1
+
+  # -- Extra config entries appended to the ConfigMap data section
+  extraConfig: {}
