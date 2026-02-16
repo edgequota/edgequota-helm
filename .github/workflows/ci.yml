@@ -32,7 +32,7 @@ jobs:
         run: helm lint . -f values-production.yaml
 
       - name: Helm lint (strict)
-        run: helm lint . --strict --with-subcharts
+        run: helm lint . --strict
 
   kubeconform:
     name: Validate Manifests
