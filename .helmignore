@@ -11,8 +11,8 @@
 .settings/
 *.tmproj
 .vscode/
-values-*.yaml
-!values.yaml
+values-minimal.yaml
+values-production.yaml
 ci/
 packaged/
 .github/
