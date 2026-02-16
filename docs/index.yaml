@@ -2,8 +2,33 @@ apiVersion: v1
 entries:
   edgequota:
   - apiVersion: v2
+    appVersion: 0.1.0
+    created: "2026-02-16T23:56:22.543183823Z"
+    description: A Helm chart for EdgeQuota - distributed rate-limiting reverse proxy
+      for Kubernetes
+    digest: 96acbd3fe1dafac3dbd8080e9773f50ff1f711c42a19c019770272d76fd015c9
+    home: https://github.com/edgequota/edgequota
+    keywords:
+    - rate-limiting
+    - reverse-proxy
+    - edge
+    - redis
+    - grpc
+    - http3
+    maintainers:
+    - name: edgequota
+      url: https://github.com/edgequota
+    name: edgequota
+    sources:
+    - https://github.com/edgequota/edgequota
+    - https://github.com/edgequota/edgequota-helm
+    type: application
+    urls:
+    - https://edgequota.github.io/edgequota-helm/edgequota-0.1.0.tgz
+    version: 0.1.0
+  - apiVersion: v2
     appVersion: 0.0.3
-    created: "2026-02-16T16:16:49.366991931Z"
+    created: "2026-02-16T23:56:22.542106665Z"
     description: A Helm chart for EdgeQuota - distributed rate-limiting reverse proxy
       for Kubernetes
     digest: 2c88870e0fe8225585388351012870a6ab83c7bfbcdf62b570f6fc027b00418a
@@ -24,6 +49,6 @@ entries:
     - https://github.com/edgequota/edgequota-helm
     type: application
     urls:
-    - https://edgequota.github.io/edgequota-helm/docs/edgequota-0.0.3.tgz
+    - https://edgequota.github.io/edgequota-helm/edgequota-0.0.3.tgz
     version: 0.0.3
-generated: "2026-02-16T16:16:49.36529039Z"
+generated: "2026-02-16T23:56:22.540850553Z"
