@@ -213,7 +213,6 @@ jobs:
           scan-ref: manifests.yaml
           exit-code: "1"
           severity: "CRITICAL,HIGH"
-          trivyignores: .trivyignore
 
       - name: Run Checkov
         run: |

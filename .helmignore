@@ -17,6 +17,5 @@ ci/
 packaged/
 .github/
 ct.yaml
-.trivyignore
 LICENSE
 README.md
