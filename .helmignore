@@ -14,8 +14,8 @@
 values-minimal.yaml
 values-production.yaml
 ci/
-packaged/
 .github/
 ct.yaml
 LICENSE
 README.md
+docs/
