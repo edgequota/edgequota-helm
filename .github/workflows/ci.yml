@@ -278,9 +278,8 @@ jobs:
         run: |
           TAG="${{ steps.version.outputs.tag }}"
           sed -i "s/^version:.*/version: ${TAG}/" Chart.yaml
-          sed -i "s/^appVersion:.*/appVersion: \"${TAG}\"/" Chart.yaml
           echo "Chart.yaml after version bump:"
-          grep -E '^(version|appVersion):' Chart.yaml
+          grep -E '^(version):' Chart.yaml
 
       - name: Set up Git LFS
         run: |
