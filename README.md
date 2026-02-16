@@ -21,7 +21,7 @@ Optional:
 ### Add the Helm repository
 
 ```bash
-helm repo add edgequota https://edgequota.github.io/edgequota-helm/docs
+helm repo add edgequota https://edgequota.github.io/edgequota-helm
 helm repo update
 ```
 
