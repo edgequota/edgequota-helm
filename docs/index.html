@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EdgeQuota Helm Chart</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #0d1117;
+      color: #e6edf3;
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .container {
+      max-width: 720px;
+      width: 100%;
+      padding: 4rem 1.5rem 3rem;
+    }
+    .badge {
+      display: inline-block;
+      background: #da3633;
+      color: #fff;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      margin-bottom: 1rem;
+    }
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+    }
+    .subtitle {
+      color: #8b949e;
+      font-size: 1.1rem;
+      margin-bottom: 2.5rem;
+    }
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 2.5rem;
+    }
+    .tag {
+      background: #161b22;
+      border: 1px solid #30363d;
+      color: #8b949e;
+      font-size: 0.8rem;
+      padding: 0.25rem 0.65rem;
+      border-radius: 2rem;
+    }
+    .card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .card h2 {
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #8b949e;
+      margin-bottom: 1rem;
+    }
+    pre {
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 1rem;
+      overflow-x: auto;
+      font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
+      font-size: 0.85rem;
+      line-height: 1.5;
+      color: #e6edf3;
+    }
+    pre .comment { color: #8b949e; }
+    pre .cmd { color: #79c0ff; }
+    .links {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+    .links a {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 0.85rem 1rem;
+      color: #58a6ff;
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .links a:hover {
+      border-color: #58a6ff;
+      background: #161b22;
+    }
+    .links svg {
+      flex-shrink: 0;
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+    }
+    .prereqs {
+      color: #8b949e;
+      font-size: 0.9rem;
+    }
+    .prereqs span {
+      color: #e6edf3;
+    }
+    footer {
+      margin-top: 1rem;
+      padding: 2rem 0;
+      color: #484f58;
+      font-size: 0.8rem;
+      text-align: center;
+    }
+    footer a { color: #484f58; text-decoration: none; }
+    footer a:hover { color: #8b949e; }
+    @media (max-width: 500px) {
+      .links { grid-template-columns: 1fr; }
+      h1 { font-size: 1.6rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="badge">Developer Preview</div>
+    <h1>EdgeQuota Helm Chart</h1>
+    <p class="subtitle">Distributed rate-limiting reverse proxy for Kubernetes.</p>
+
+    <div class="tags">
+      <span class="tag">rate-limiting</span>
+      <span class="tag">reverse-proxy</span>
+      <span class="tag">redis</span>
+      <span class="tag">grpc</span>
+      <span class="tag">http3</span>
+      <span class="tag">helm</span>
+    </div>
+
+    <div class="card">
+      <h2>Install</h2>
+      <pre><span class="comment"># Add the repository</span>
+<span class="cmd">helm</span> repo add edgequota https://edgequota.github.io/edgequota-helm
+<span class="cmd">helm</span> repo update
+
+<span class="comment"># Install</span>
+<span class="cmd">helm</span> install edgequota edgequota/edgequota -f values-minimal.yaml</pre>
+    </div>
+
+    <div class="card">
+      <h2>Prerequisites</h2>
+      <p class="prereqs">
+        <span>Kubernetes 1.28+</span> &middot;
+        <span>Helm 3.12+</span> or <span>Helm 4.x</span> &middot;
+        <span>Redis</span> (external)
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Links</h2>
+      <div class="links">
+        <a href="https://github.com/edgequota/edgequota-helm">
+          <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+          Chart Repo
+        </a>
+        <a href="https://github.com/edgequota/edgequota">
+          <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+          EdgeQuota
+        </a>
+        <a href="https://github.com/edgequota/edgequota-helm/blob/main/README.md">
+          <svg viewBox="0 0 16 16"><path d="M0 1.75A.75.75 0 01.75 1h4.253c1.227 0 2.317.59 3 1.501A3.744 3.744 0 0111.006 1h4.245a.75.75 0 01.75.75v10.5a.75.75 0 01-.75.75h-4.507a2.25 2.25 0 00-1.591.659l-.622.621a.75.75 0 01-1.06 0l-.622-.621A2.25 2.25 0 005.258 13H.75a.75.75 0 01-.75-.75zm7.251 10.324l.004-5.073-.002-2.253A2.25 2.25 0 005.003 2.5H1.5v9h3.757a3.75 3.75 0 011.994.574zM8.755 4.75l-.004 7.322a3.752 3.752 0 011.992-.572H14.5v-9h-3.495a2.25 2.25 0 00-2.25 2.25z"/></svg>
+          Documentation
+        </a>
+        <a href="https://github.com/edgequota/edgequota-helm/blob/main/LICENSE">
+          <svg viewBox="0 0 16 16"><path d="M8.75.75V2h.985c.304 0 .603.08.867.231l1.29.736c.038.022.08.033.124.033h2.234a.75.75 0 010 1.5h-.427l2.111 4.692a.75.75 0 01-.154.838l-.53-.53.529.531-.001.002-.002.002-.006.006-.006.005-.01.01a3.735 3.735 0 01-.106.09 3.446 3.446 0 01-.262.19 3.372 3.372 0 01-.607.31c-.459.197-1.063.35-1.79.35-.726 0-1.329-.153-1.788-.35a3.373 3.373 0 01-.607-.31 3.4 3.4 0 01-.263-.19 2.6 2.6 0 01-.106-.09l-.01-.01-.006-.005-.004-.004-.002-.002-.001-.001L9.78 9.57a.75.75 0 01-.156-.838L11.74 4h-.46a1.242 1.242 0 01-.618-.165l-.006-.004-.004-.002-1.29-.736a.25.25 0 00-.124-.033H8.75V13h2.5a.75.75 0 010 1.5h-6.5a.75.75 0 010-1.5h2.5V3.06h-.985a.25.25 0 00-.124.033l-1.29.736-.004.002-.006.004A1.243 1.243 0 014.72 4h-.46l2.116 4.692a.75.75 0 01-.154.838l-.53-.53.529.531-.001.002-.002.002-.006.006-.006.005-.01.01a2.459 2.459 0 01-.106.09 3.446 3.446 0 01-.262.19 3.372 3.372 0 01-.607.31c-.459.197-1.063.35-1.79.35-.726 0-1.329-.153-1.788-.35a3.372 3.372 0 01-.607-.31 3.4 3.4 0 01-.263-.19 2.6 2.6 0 01-.106-.09l-.01-.01-.006-.005-.004-.004-.002-.002-.001-.001L.78 9.57a.75.75 0 01-.156-.838L2.74 4h-.46a.75.75 0 010-1.5h2.234c.044 0 .086-.011.124-.033l1.29-.736A1.75 1.75 0 016.797 1.5H7.25V.75a.75.75 0 011.5 0zm-5 8.788a1.723 1.723 0 00.489-.17 1.872 1.872 0 00.337-.172L3.5 6.648l-1.076 2.548c.1.073.202.131.302.172.168.072.392.128.674.14h.35zm7 0a1.722 1.722 0 00.489-.17c.1-.041.202-.099.337-.172l-1.076-2.548-1.076 2.548c.1.073.202.131.302.172.168.072.392.128.674.14h.35z"/></svg>
+          Apache 2.0
+        </a>
+      </div>
+    </div>
+
+    <footer>
+      <a href="https://github.com/edgequota">edgequota</a> &middot; Apache License 2.0
+    </footer>
+  </div>
+</body>
+</html>
