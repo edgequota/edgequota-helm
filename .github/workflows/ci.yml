@@ -284,26 +284,26 @@ jobs:
 
       - name: Package chart
         run: |
-          mkdir -p charts
-          helm package . --destination charts/
+          mkdir -p packaged
+          helm package . --destination packaged/
 
       - name: Generate or merge repository index
         run: |
           REPO_URL="https://${{ github.repository_owner }}.github.io/$(echo '${{ github.repository }}' | cut -d/ -f2)"
-          echo "Repository URL: ${REPO_URL}/charts"
+          echo "Repository URL: ${REPO_URL}/packaged"
 
-          if [ -f charts/index.yaml ]; then
-            helm repo index charts/ --url "${REPO_URL}/charts" --merge charts/index.yaml
+          if [ -f packaged/index.yaml ]; then
+            helm repo index packaged/ --url "${REPO_URL}/packaged" --merge packaged/index.yaml
           else
-            helm repo index charts/ --url "${REPO_URL}/charts"
+            helm repo index packaged/ --url "${REPO_URL}/packaged"
           fi
 
           echo "Generated index.yaml:"
-          cat charts/index.yaml
+          cat packaged/index.yaml
 
       - name: Commit and push to main
         run: |
-          git add charts/
+          git add packaged/
           git status
           git commit -m "chore: publish chart ${{ steps.version.outputs.tag }} to GitHub Pages"
           git push origin HEAD:main

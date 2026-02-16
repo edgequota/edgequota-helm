@@ -1,0 +1,11 @@
+{
+  "files.associations": {
+    "templates/**/*.yaml": "helm",
+    "templates/**/*.tpl": "helm",
+    "templates/**/*.txt": "helm"
+  },
+  "yaml.schemas": {},
+  "[helm]": {
+    "editor.formatOnSave": false
+  }
+}

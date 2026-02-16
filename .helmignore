@@ -14,7 +14,7 @@
 values-*.yaml
 !values.yaml
 ci/
-charts/
+packaged/
 .github/
 ct.yaml
 .trivyignore

@@ -21,7 +21,7 @@ Optional:
 ### Add the Helm repository
 
 ```bash
-helm repo add edgequota https://edgequota.github.io/edgequota-helm/charts
+helm repo add edgequota https://edgequota.github.io/edgequota-helm/packaged
 helm repo update
 ```
 
@@ -333,7 +333,7 @@ The chart includes a comprehensive GitHub Actions CI pipeline (`.github/workflow
 - **Security** - Trivy config scan + Checkov for misconfigurations
 - **Docs** - Validates that all top-level values keys are documented
 
-On tag push (`v*`), after all checks pass, the chart is packaged and published to GitHub Pages via the `charts/` directory.
+On tag push (`v*`), after all checks pass, the chart is packaged and published to GitHub Pages via the `packaged/` directory.
 
 ## Links
 
