@@ -19,7 +19,7 @@ image:
   # -- Container image registry (leave empty if repository includes registry)
   registry: ""
   # -- Container image repository
-  repository: ghcr.io/shoro-io/edgequota
+  repository: ghcr.io/edgequota/edgequota
   # -- Container image tag (defaults to Chart.appVersion)
   tag: ""
   # -- Image pull policy
