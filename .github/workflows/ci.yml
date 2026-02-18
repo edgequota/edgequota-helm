@@ -57,7 +57,7 @@ jobs:
 
       - name: Install kubeconform
         run: |
-          curl -fsSL https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz \
+          curl -fsSL https://github.com/yannh/kubeconform/releases/download/v0.7.0/kubeconform-linux-amd64.tar.gz \
             | tar xz -C /usr/local/bin kubeconform
 
       - name: Template (${{ matrix.values.name }})
@@ -73,7 +73,7 @@ jobs:
           kubeconform \
             -kubernetes-version ${{ matrix.k8s-version }} \
             -schema-location default \
-            -skip ServiceMonitor,Certificate,VerticalPodAutoscaler \
+            -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
             -strict \
             -summary \
             -output json \
