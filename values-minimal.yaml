@@ -18,7 +18,8 @@ edgequota:
     url: "http://my-backend-service:8080"
 
   redis:
-    endpoints: "redis:6379"
+    endpoints:
+      - "redis:6379"
     mode: "single"
 
   rateLimit:

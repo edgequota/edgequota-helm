@@ -333,7 +333,10 @@ edgequota:
 
   redis:
     # -- Redis Sentinel with 3 nodes
-    endpoints: "redis-node-0.redis-headless:26379,redis-node-1.redis-headless:26379,redis-node-2.redis-headless:26379"
+    endpoints:
+      - "redis-node-0.redis-headless:26379"
+      - "redis-node-1.redis-headless:26379"
+      - "redis-node-2.redis-headless:26379"
     mode: "sentinel"
     masterName: "mymaster"
     db: 0

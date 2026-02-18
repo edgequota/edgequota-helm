@@ -92,7 +92,8 @@ data:
 
     # --- Redis ---
     redis:
-      endpoints: {{ .Values.edgequota.redis.endpoints | quote }}
+      endpoints:
+        {{- include "edgequota.endpointsList" .Values.edgequota.redis.endpoints | nindent 8 }}
       {{- with .Values.edgequota.redis.mode }}
       mode: {{ . | quote }}
       {{- end }}
@@ -125,7 +126,8 @@ data:
     {{- if .Values.edgequota.cacheRedis.enabled }}
     # --- Cache Redis (optional dedicated instance) ---
     cache_redis:
-      endpoints: {{ .Values.edgequota.cacheRedis.endpoints | quote }}
+      endpoints:
+        {{- include "edgequota.endpointsList" .Values.edgequota.cacheRedis.endpoints | nindent 8 }}
       {{- with .Values.edgequota.cacheRedis.mode }}
       mode: {{ . | quote }}
       {{- end }}

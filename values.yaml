@@ -461,8 +461,9 @@ edgequota:
 
   # --- Redis ---
   redis:
-    # -- Redis endpoint(s) (comma-separated for cluster/sentinel)
-    endpoints: "localhost:6379"
+    # -- Redis endpoint(s); list of host:port strings
+    endpoints:
+      - "localhost:6379"
     # -- Redis mode: single, replication, sentinel, cluster
     mode: "single"
     # -- Redis Sentinel master name (required for sentinel mode)
@@ -487,7 +488,8 @@ edgequota:
   cacheRedis:
     # -- Enable a separate Redis for external rate-limit cache
     enabled: false
-    endpoints: ""
+    # -- Cache Redis endpoint(s); list of host:port strings
+    endpoints: []
     mode: "single"
     masterName: ""
     db: 0

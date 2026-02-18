@@ -128,6 +128,19 @@ http
 {{- end }}
 
 {{/*
+Render endpoints as a YAML list. Accepts either a list of strings or a single
+comma-separated string (for backwards compatibility). Always outputs a YAML list.
+Usage: include "edgequota.endpointsList" .Values.edgequota.redis.endpoints
+*/}}
+{{- define "edgequota.endpointsList" -}}
+{{- if kindIs "slice" . -}}
+{{ toYaml . }}
+{{- else -}}
+{{ toYaml (splitList "," . | compact) }}
+{{- end -}}
+{{- end }}
+
+{{/*
 Checksum annotations for rolling restarts on config/secret changes
 */}}
 {{- define "edgequota.checksumAnnotations" -}}
