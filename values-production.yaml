@@ -161,6 +161,25 @@ certificate:
   #   size: 256
 
 # =============================================================================
+# Vertical Pod Autoscaler — recommendation-only alongside HPA
+# =============================================================================
+# Requires the VPA CRD (autoscaling.k8s.io/v1) to be installed.
+# updateMode "Off" means VPA will only provide resource recommendations
+# without mutating pods — HPA handles the actual scaling.
+verticalPodAutoscaler:
+  enabled: true
+  updateMode: "Off"
+  containerPolicies:
+    - containerName: "*"
+      minAllowed:
+        cpu: 100m
+        memory: 64Mi
+      maxAllowed:
+        cpu: "4"
+        memory: 4Gi
+      controlledResources: ["cpu", "memory"]
+
+# =============================================================================
 # Autoscaling (HPA)
 # =============================================================================
 autoscaling:

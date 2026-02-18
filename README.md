@@ -15,6 +15,7 @@ EdgeQuota is a distributed rate-limiting reverse proxy that sits at the edge of 
 Optional:
 - [cert-manager](https://cert-manager.io/) for automated TLS certificate management
 - [prometheus-operator](https://github.com/prometheus-operator/kube-prometheus) (kube-prometheus-stack) for ServiceMonitor support
+- [Vertical Pod Autoscaler](https://github.com/kubernetes/autoscaler/tree/master/vertical-pod-autoscaler) for VPA resource recommendations
 
 ## Quick Start
 
@@ -69,7 +70,7 @@ This chart ships with two example value files:
 | File | Purpose |
 |---|---|
 | [`values-minimal.yaml`](values-minimal.yaml) | Bare minimum for dev/test. Single replica, single Redis, inline password. |
-| [`values-production.yaml`](values-production.yaml) | Production-ready. HPA (3-15 replicas), Redis Sentinel, PDB, NetworkPolicy, Ingress with cert-manager TLS, ServiceMonitor, topology spread, pod anti-affinity. |
+| [`values-production.yaml`](values-production.yaml) | Production-ready. HPA (3-15 replicas), VPA (Off mode for recommendations), Redis Sentinel, PDB, NetworkPolicy, Ingress with cert-manager TLS, ServiceMonitor, topology spread, pod anti-affinity. |
 
 ## What Gets Deployed
 
@@ -84,6 +85,7 @@ Resources are conditionally rendered based on your values:
 | Deployment | always | always |
 | Service | always | always |
 | HorizontalPodAutoscaler | `autoscaling.enabled` | disabled |
+| VerticalPodAutoscaler | `verticalPodAutoscaler.enabled` | disabled |
 | PodDisruptionBudget | `podDisruptionBudget.enabled` | disabled |
 | Ingress | `ingress.enabled` | disabled |
 | Certificate (cert-manager) | `certificate.enabled` | disabled |
@@ -230,6 +232,8 @@ edgequota:
 
 ### Autoscaling
 
+#### Horizontal Pod Autoscaler (HPA)
+
 ```yaml
 autoscaling:
   enabled: true
@@ -239,6 +243,33 @@ autoscaling:
   behavior:
     scaleDown:
       stabilizationWindowSeconds: 300
+```
+
+#### Vertical Pod Autoscaler (VPA)
+
+Requires the [VPA CRD](https://github.com/kubernetes/autoscaler/tree/master/vertical-pod-autoscaler) (`autoscaling.k8s.io/v1`) to be installed in the cluster.
+
+| Parameter | Description | Default |
+|---|---|---|
+| `verticalPodAutoscaler.enabled` | Enable VPA | `false` |
+| `verticalPodAutoscaler.updateMode` | `Auto`, `Recreate`, or `Off` | `Auto` |
+| `verticalPodAutoscaler.containerPolicies` | Per-container min/max resource boundaries | see `values.yaml` |
+
+When running **both HPA and VPA**, set `updateMode: "Off"` so VPA only provides recommendations without mutating pods (HPA handles scaling):
+
+```yaml
+verticalPodAutoscaler:
+  enabled: true
+  updateMode: "Off"
+  containerPolicies:
+    - containerName: "*"
+      minAllowed:
+        cpu: 100m
+        memory: 64Mi
+      maxAllowed:
+        cpu: "4"
+        memory: 4Gi
+      controlledResources: ["cpu", "memory"]
 ```
 
 ### Monitoring

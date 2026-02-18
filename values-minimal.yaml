@@ -26,6 +26,11 @@ edgequota:
     burst: 20
     period: "1s"
 
+# VPA is disabled by default; enable and configure in production values
+# verticalPodAutoscaler:
+#   enabled: true
+#   updateMode: "Off"
+
 # Redis password — for production, use secrets.existingSecret instead
 secrets:
   create: true

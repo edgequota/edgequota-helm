@@ -1,0 +1,26 @@
+{{- if .Values.verticalPodAutoscaler.enabled }}
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: {{ include "edgequota.fullname" . }}
+  labels:
+    {{- include "edgequota.labels" . | nindent 4 }}
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "edgequota.fullname" . }}
+  updatePolicy:
+    updateMode: {{ .Values.verticalPodAutoscaler.updateMode | quote }}
+  resourcePolicy:
+    containerPolicies:
+    {{- range .Values.verticalPodAutoscaler.containerPolicies }}
+    - containerName: {{ .containerName | quote }}
+      minAllowed:
+        {{- toYaml .minAllowed | nindent 8 }}
+      maxAllowed:
+        {{- toYaml .maxAllowed | nindent 8 }}
+      controlledResources:
+        {{- toYaml .controlledResources | nindent 8 }}
+    {{- end }}
+{{- end }}

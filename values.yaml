@@ -223,6 +223,26 @@ certificate:
     size: 256
 
 # =============================================================================
+# Vertical Pod Autoscaler (VPA)
+# =============================================================================
+# Requires the VPA CRD (autoscaling.k8s.io/v1) to be installed.
+verticalPodAutoscaler:
+  # -- Enable Vertical Pod Autoscaler
+  enabled: false
+  # -- Update mode: Auto, Recreate, or Off
+  updateMode: "Auto"
+  # -- Container-level resource policies
+  containerPolicies:
+    - containerName: "*"
+      minAllowed:
+        cpu: 50m
+        memory: 64Mi
+      maxAllowed:
+        cpu: "2"
+        memory: 2Gi
+      controlledResources: ["cpu", "memory"]
+
+# =============================================================================
 # Autoscaling (HPA)
 # =============================================================================
 autoscaling:
