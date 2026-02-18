@@ -14,16 +14,16 @@ Ingress is enabled. Access EdgeQuota at:
 {{- else }}
 
 To access EdgeQuota proxy, run:
-  kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "edgequota.fullname" . }} {{ .Values.service.port | default 8080 }}:{{ .Values.service.port | default 8080 }}
+  kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "edgequota.fullname" . }} 8080:{{ include "edgequota.servicePort" . }}
 
 {{- end }}
 
-Admin/metrics endpoint:
-  kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "edgequota.fullname" . }} {{ .Values.service.adminPort | default 9090 }}:{{ .Values.service.adminPort | default 9090 }}
+Admin/metrics endpoint ({{ include "edgequota.fullname" . }}-admin service, always ClusterIP):
+  kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "edgequota.fullname" . }}-admin {{ include "edgequota.adminPort" . }}:{{ include "edgequota.adminPort" . }}
 
-  Health:    http://localhost:{{ .Values.service.adminPort | default 9090 }}/healthz
-  Ready:     http://localhost:{{ .Values.service.adminPort | default 9090 }}/readyz
-  Metrics:   http://localhost:{{ .Values.service.adminPort | default 9090 }}/metrics
+  Health:    http://localhost:{{ include "edgequota.adminPort" . }}/healthz
+  Ready:     http://localhost:{{ include "edgequota.adminPort" . }}/readyz
+  Metrics:   http://localhost:{{ include "edgequota.adminPort" . }}/metrics
 
 {{- if .Values.autoscaling.enabled }}
 

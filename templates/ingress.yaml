@@ -36,7 +36,7 @@ spec:
               service:
                 name: {{ include "edgequota.fullname" $ }}
                 port:
-                  name: proxy
+                  name: {{ include "edgequota.servicePortName" $ }}
           {{- end }}
     {{- end }}
 {{- end }}

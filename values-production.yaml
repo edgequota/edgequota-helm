@@ -114,10 +114,10 @@ readinessProbe:
 # =============================================================================
 # Service
 # =============================================================================
+# Proxy service port is auto-derived: 80 (no TLS) or 443 (TLS).
+# Admin service is always ClusterIP on the admin container port.
 service:
   type: ClusterIP
-  port: 8080
-  adminPort: 9090
 
 # =============================================================================
 # Ingress — with cert-manager TLS termination

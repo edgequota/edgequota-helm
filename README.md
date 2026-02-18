@@ -53,13 +53,18 @@ helm install edgequota . -f values-minimal.yaml
 ```
                   ┌──────────────────────────────────────────┐
                   │              EdgeQuota Pod                │
-Internet ──▶ Ingress ──▶ :8080 (proxy) ──▶ Backend Service   │
-                  │       :9090 (admin/metrics/health)       │
+Internet ──▶ Ingress ──▶ :80/443 (proxy svc) ──▶ :8080 ──▶ Backend
+                  │                                          │
+                  │    :9090 (admin svc, ClusterIP only)     │
                   │              │                            │
                   │              ▼                            │
                   │         Redis (external)                  │
                   └──────────────────────────────────────────┘
 ```
+
+The chart creates two services:
+- **Proxy service** (`<release>-edgequota`) — port 80 (no TLS) or 443 (TLS), targeting container port 8080. Type is configurable (ClusterIP, NodePort, LoadBalancer).
+- **Admin service** (`<release>-edgequota-admin`) — always ClusterIP on port 9090. Serves health probes, readiness checks, and Prometheus metrics.
 
 **Request flow:** Auth (optional) → Rate Limit → Reverse Proxy → Backend
 
@@ -83,7 +88,8 @@ Resources are conditionally rendered based on your values:
 | ConfigMap | always | always |
 | Secret | `secrets.create` | disabled |
 | Deployment | always | always |
-| Service | always | always |
+| Service (proxy) | always | always |
+| Service (admin) | always | always |
 | HorizontalPodAutoscaler | `autoscaling.enabled` | disabled |
 | VerticalPodAutoscaler | `verticalPodAutoscaler.enabled` | disabled |
 | PodDisruptionBudget | `podDisruptionBudget.enabled` | disabled |

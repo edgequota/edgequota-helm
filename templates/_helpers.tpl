@@ -92,17 +92,39 @@ TLS cert mount path
 {{- end }}
 
 {{/*
-Return the proper admin port
+Return the admin container port
 */}}
 {{- define "edgequota.adminPort" -}}
 {{- .Values.edgequota.admin.port | default 9090 }}
 {{- end }}
 
 {{/*
-Return the proper proxy port
+Return the proxy container port
 */}}
 {{- define "edgequota.proxyPort" -}}
 {{- .Values.edgequota.server.port | default 8080 }}
+{{- end }}
+
+{{/*
+Return the proxy service port: 443 when TLS is enabled, 80 otherwise
+*/}}
+{{- define "edgequota.servicePort" -}}
+{{- if .Values.edgequota.server.tls.enabled -}}
+443
+{{- else -}}
+80
+{{- end -}}
+{{- end }}
+
+{{/*
+Return the proxy service port name
+*/}}
+{{- define "edgequota.servicePortName" -}}
+{{- if .Values.edgequota.server.tls.enabled -}}
+https
+{{- else -}}
+http
+{{- end -}}
 {{- end }}
 
 {{/*

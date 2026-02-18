@@ -142,15 +142,18 @@ readinessProbe:
 # =============================================================================
 # Service
 # =============================================================================
+# The chart creates two services:
+#   1. Proxy service — port 80 (no TLS) or 443 (TLS) → container port 8080.
+#      Type and LB options are configurable below.
+#   2. Admin service — always ClusterIP on the admin container port (default 9090).
+#      Serves health probes, readiness, and Prometheus metrics.
 service:
-  # -- Service type: ClusterIP, NodePort, LoadBalancer
+  # -- Proxy service type: ClusterIP, NodePort, LoadBalancer
   type: ClusterIP
-  # -- Proxy port
-  port: 8080
-  # -- Admin/metrics port
-  adminPort: 9090
-  # -- Annotations for the Service (e.g., for cloud LB configuration)
+  # -- Annotations for the proxy Service (e.g., for cloud LB configuration)
   annotations: {}
+  # -- Annotations for the admin Service
+  adminAnnotations: {}
   # -- Explicit cluster IP (set to "None" for headless)
   clusterIP: ""
   # -- Load balancer IP (cloud-specific)
