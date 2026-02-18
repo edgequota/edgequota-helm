@@ -22,8 +22,17 @@ data:
       {{- with .Values.edgequota.server.drainTimeout }}
       drain_timeout: {{ . | quote }}
       {{- end }}
+      {{- with .Values.edgequota.server.requestTimeout }}
+      request_timeout: {{ . | quote }}
+      {{- end }}
       {{- if .Values.edgequota.server.maxWebsocketConnsPerKey }}
       max_websocket_conns_per_key: {{ .Values.edgequota.server.maxWebsocketConnsPerKey }}
+      {{- end }}
+      {{- if .Values.edgequota.server.maxWebsocketTransferBytes }}
+      max_websocket_transfer_bytes: {{ .Values.edgequota.server.maxWebsocketTransferBytes | int64 }}
+      {{- end }}
+      {{- with .Values.edgequota.server.websocketIdleTimeout }}
+      websocket_idle_timeout: {{ . | quote }}
       {{- end }}
       {{- if .Values.edgequota.server.tls.enabled }}
       tls:
@@ -67,6 +76,9 @@ data:
       {{- if .Values.edgequota.backend.tlsInsecureSkipVerify }}
       tls_insecure_skip_verify: true
       {{- end }}
+      {{- if .Values.edgequota.backend.maxRequestBodySize }}
+      max_request_body_size: {{ .Values.edgequota.backend.maxRequestBodySize | int64 }}
+      {{- end }}
       {{- with .Values.edgequota.backend.transport }}
       transport:
         {{- with .dialTimeout }}
@@ -78,6 +90,9 @@ data:
         {{- with .tlsHandshakeTimeout }}
         tls_handshake_timeout: {{ . | quote }}
         {{- end }}
+        {{- with .expectContinueTimeout }}
+        expect_continue_timeout: {{ . | quote }}
+        {{- end }}
         {{- with .h2ReadIdleTimeout }}
         h2_read_idle_timeout: {{ . | quote }}
         {{- end }}
@@ -86,6 +101,20 @@ data:
         {{- end }}
         {{- with .websocketDialTimeout }}
         websocket_dial_timeout: {{ . | quote }}
+        {{- end }}
+      {{- end }}
+      {{- if .Values.edgequota.backend.urlPolicy }}
+      url_policy:
+        {{- with .Values.edgequota.backend.urlPolicy.allowedSchemes }}
+        allowed_schemes:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        {{- if not (kindIs "invalid" .Values.edgequota.backend.urlPolicy.denyPrivateNetworks) }}
+        deny_private_networks: {{ .Values.edgequota.backend.urlPolicy.denyPrivateNetworks }}
+        {{- end }}
+        {{- with .Values.edgequota.backend.urlPolicy.allowedHosts }}
+        allowed_hosts:
+          {{- toYaml . | nindent 10 }}
         {{- end }}
       {{- end }}
     {{- end }}
@@ -166,8 +195,20 @@ data:
       {{- with .Values.edgequota.rateLimit.failureCode }}
       failure_code: {{ . }}
       {{- end }}
+      {{- with .Values.edgequota.rateLimit.keyPrefix }}
+      key_prefix: {{ . | quote }}
+      {{- end }}
       {{- with .Values.edgequota.rateLimit.minTTL }}
       min_ttl: {{ . | quote }}
+      {{- end }}
+      {{- if .Values.edgequota.rateLimit.maxTenantLabels }}
+      max_tenant_labels: {{ .Values.edgequota.rateLimit.maxTenantLabels }}
+      {{- end }}
+      {{- if .Values.edgequota.rateLimit.maxRecoveryAttempts }}
+      max_recovery_attempts: {{ .Values.edgequota.rateLimit.maxRecoveryAttempts }}
+      {{- end }}
+      {{- if .Values.edgequota.rateLimit.globalPassthroughRps }}
+      global_passthrough_rps: {{ .Values.edgequota.rateLimit.globalPassthroughRps }}
       {{- end }}
       {{- if .Values.edgequota.rateLimit.keyStrategy }}
       key_strategy:
@@ -188,9 +229,62 @@ data:
         trusted_ip_depth: {{ . }}
         {{- end }}
       {{- end }}
-      {{- if .Values.edgequota.rateLimit.external }}
+      {{- if .Values.edgequota.rateLimit.external.enabled }}
       external:
-        {{- toYaml .Values.edgequota.rateLimit.external | nindent 8 }}
+        enabled: true
+        {{- with .Values.edgequota.rateLimit.external.timeout }}
+        timeout: {{ . | quote }}
+        {{- end }}
+        {{- with .Values.edgequota.rateLimit.external.cacheTTL }}
+        cache_ttl: {{ . | quote }}
+        {{- end }}
+        {{- if .Values.edgequota.rateLimit.external.http.url }}
+        http:
+          url: {{ .Values.edgequota.rateLimit.external.http.url | quote }}
+        {{- end }}
+        {{- if .Values.edgequota.rateLimit.external.grpc.address }}
+        grpc:
+          address: {{ .Values.edgequota.rateLimit.external.grpc.address | quote }}
+          {{- if .Values.edgequota.rateLimit.external.grpc.tls.enabled }}
+          tls:
+            enabled: true
+            {{- with .Values.edgequota.rateLimit.external.grpc.tls.caFile }}
+            ca_file: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.edgequota.rateLimit.external.grpc.tls.serverName }}
+            server_name: {{ . | quote }}
+            {{- end }}
+          {{- end }}
+        {{- end }}
+        {{- if or .Values.edgequota.rateLimit.external.headerFilter.allowList .Values.edgequota.rateLimit.external.headerFilter.denyList }}
+        header_filter:
+          {{- with .Values.edgequota.rateLimit.external.headerFilter.allowList }}
+          allow_list:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.edgequota.rateLimit.external.headerFilter.denyList }}
+          deny_list:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+        {{- end }}
+        {{- if .Values.edgequota.rateLimit.external.maxConcurrentRequests }}
+        max_concurrent_requests: {{ .Values.edgequota.rateLimit.external.maxConcurrentRequests }}
+        {{- end }}
+        {{- if .Values.edgequota.rateLimit.external.maxCircuitBreakers }}
+        max_circuit_breakers: {{ .Values.edgequota.rateLimit.external.maxCircuitBreakers }}
+        {{- end }}
+        {{- with .Values.edgequota.rateLimit.external.maxLatency }}
+        max_latency: {{ . | quote }}
+        {{- end }}
+        {{- if or .Values.edgequota.rateLimit.external.circuitBreaker.threshold .Values.edgequota.rateLimit.external.circuitBreaker.resetTimeout }}
+        circuit_breaker:
+          {{- if .Values.edgequota.rateLimit.external.circuitBreaker.threshold }}
+          threshold: {{ .Values.edgequota.rateLimit.external.circuitBreaker.threshold }}
+          {{- end }}
+          {{- with .Values.edgequota.rateLimit.external.circuitBreaker.resetTimeout }}
+          reset_timeout: {{ . | quote }}
+          {{- end }}
+        {{- end }}
       {{- end }}
 
     # --- Auth (optional) ---
@@ -203,9 +297,18 @@ data:
       {{- with .Values.edgequota.auth.failurePolicy }}
       failure_policy: {{ . | quote }}
       {{- end }}
+      {{- if .Values.edgequota.auth.propagateRequestBody }}
+      propagate_request_body: true
+      {{- end }}
+      {{- if .Values.edgequota.auth.maxAuthBodySize }}
+      max_auth_body_size: {{ .Values.edgequota.auth.maxAuthBodySize | int64 }}
+      {{- end }}
       {{- if .Values.edgequota.auth.http.url }}
       http:
         url: {{ .Values.edgequota.auth.http.url | quote }}
+        {{- if .Values.edgequota.auth.http.forwardOriginalHeaders }}
+        forward_original_headers: true
+        {{- end }}
       {{- end }}
       {{- if .Values.edgequota.auth.grpc.address }}
       grpc:
@@ -216,6 +319,73 @@ data:
           {{- with .Values.edgequota.auth.grpc.tls.caFile }}
           ca_file: {{ . | quote }}
           {{- end }}
+          {{- with .Values.edgequota.auth.grpc.tls.serverName }}
+          server_name: {{ . | quote }}
+          {{- end }}
+        {{- end }}
+      {{- end }}
+      {{- if or .Values.edgequota.auth.headerFilter.allowList .Values.edgequota.auth.headerFilter.denyList }}
+      header_filter:
+        {{- with .Values.edgequota.auth.headerFilter.allowList }}
+        allow_list:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        {{- with .Values.edgequota.auth.headerFilter.denyList }}
+        deny_list:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+      {{- end }}
+      {{- if or .Values.edgequota.auth.circuitBreaker.threshold .Values.edgequota.auth.circuitBreaker.resetTimeout }}
+      circuit_breaker:
+        {{- if .Values.edgequota.auth.circuitBreaker.threshold }}
+        threshold: {{ .Values.edgequota.auth.circuitBreaker.threshold }}
+        {{- end }}
+        {{- with .Values.edgequota.auth.circuitBreaker.resetTimeout }}
+        reset_timeout: {{ . | quote }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+
+    # --- Events (optional) ---
+    {{- if .Values.edgequota.events.enabled }}
+    events:
+      enabled: true
+      {{- if .Values.edgequota.events.http.url }}
+      http:
+        url: {{ .Values.edgequota.events.http.url | quote }}
+      {{- end }}
+      {{- if .Values.edgequota.events.grpc.address }}
+      grpc:
+        address: {{ .Values.edgequota.events.grpc.address | quote }}
+        {{- if .Values.edgequota.events.grpc.tls.enabled }}
+        tls:
+          enabled: true
+          {{- with .Values.edgequota.events.grpc.tls.caFile }}
+          ca_file: {{ . | quote }}
+          {{- end }}
+          {{- with .Values.edgequota.events.grpc.tls.serverName }}
+          server_name: {{ . | quote }}
+          {{- end }}
+        {{- end }}
+      {{- end }}
+      {{- if .Values.edgequota.events.batchSize }}
+      batch_size: {{ .Values.edgequota.events.batchSize }}
+      {{- end }}
+      {{- with .Values.edgequota.events.flushInterval }}
+      flush_interval: {{ . | quote }}
+      {{- end }}
+      {{- if .Values.edgequota.events.bufferSize }}
+      buffer_size: {{ .Values.edgequota.events.bufferSize }}
+      {{- end }}
+      {{- if or .Values.edgequota.events.headerFilter.allowList .Values.edgequota.events.headerFilter.denyList }}
+      header_filter:
+        {{- with .Values.edgequota.events.headerFilter.allowList }}
+        allow_list:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        {{- with .Values.edgequota.events.headerFilter.denyList }}
+        deny_list:
+          {{- toYaml . | nindent 10 }}
         {{- end }}
       {{- end }}
     {{- end }}

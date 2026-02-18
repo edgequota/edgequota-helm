@@ -310,6 +310,7 @@ edgequota:
     writeTimeout: "30s"
     idleTimeout: "120s"
     drainTimeout: "30s"
+    requestTimeout: "60s"
     tls:
       enabled: false  # TLS terminated at ingress in this example
 
@@ -324,15 +325,17 @@ edgequota:
     timeout: "30s"
     maxIdleConns: 200
     idleConnTimeout: "90s"
+    maxRequestBodySize: 10485760  # 10 MiB
     transport:
       dialTimeout: "10s"
       dialKeepAlive: "30s"
       tlsHandshakeTimeout: "10s"
       h2ReadIdleTimeout: "30s"
       h2PingTimeout: "15s"
+    urlPolicy:
+      denyPrivateNetworks: true
 
   redis:
-    # -- Redis Sentinel with 3 nodes
     endpoints:
       - "redis-node-0.redis-headless:26379"
       - "redis-node-1.redis-headless:26379"
@@ -353,6 +356,7 @@ edgequota:
     period: "1s"
     failurePolicy: "inMemoryFallback"
     failureCode: 429
+    maxRecoveryAttempts: 20
     keyStrategy:
       type: "clientIP"
       trustedProxies:
@@ -360,6 +364,38 @@ edgequota:
         - "172.16.0.0/12"
         - "192.168.0.0/16"
       trustedIPDepth: 1
+
+    # -- External rate-limit service (uncomment to enable)
+    # external:
+    #   enabled: true
+    #   timeout: "3s"
+    #   cacheTTL: "30s"
+    #   http:
+    #     url: "http://rl-service.default:8080/limits"
+    #   maxConcurrentRequests: 100
+    #   circuitBreaker:
+    #     threshold: 5
+    #     resetTimeout: "30s"
+
+  # -- Auth (uncomment to enable)
+  # auth:
+  #   enabled: true
+  #   timeout: "5s"
+  #   failurePolicy: "failclosed"
+  #   http:
+  #     url: "http://auth-service.default:8080/check"
+  #   circuitBreaker:
+  #     threshold: 5
+  #     resetTimeout: "30s"
+
+  # -- Events (uncomment to enable)
+  # events:
+  #   enabled: true
+  #   http:
+  #     url: "http://events-service.default:8080/publish"
+  #   batchSize: 100
+  #   flushInterval: "5s"
+  #   bufferSize: 10000
 
   logging:
     level: "info"

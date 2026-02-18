@@ -27,10 +27,25 @@ edgequota:
     burst: 20
     period: "1s"
 
-# VPA is disabled by default; enable and configure in production values
-# verticalPodAutoscaler:
-#   enabled: true
-#   updateMode: "Off"
+  # -- Uncomment to enable external auth
+  # auth:
+  #   enabled: true
+  #   timeout: "5s"
+  #   http:
+  #     url: "http://auth-service:8080/check"
+
+  # -- Uncomment to enable external rate-limit service
+  # rateLimit:
+  #   external:
+  #     enabled: true
+  #     http:
+  #       url: "http://rl-service:8080/limits"
+
+  # -- Uncomment to enable usage event emission
+  # events:
+  #   enabled: true
+  #   http:
+  #     url: "http://events-service:8080/publish"
 
 # Redis password — for production, use secrets.existingSecret instead
 secrets:

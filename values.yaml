@@ -414,8 +414,14 @@ edgequota:
     idleTimeout: "120s"
     # -- Graceful shutdown drain timeout
     drainTimeout: "30s"
+    # -- Per-request timeout (0 = no timeout)
+    requestTimeout: ""
     # -- Max WebSocket connections per rate-limit key (0 = unlimited)
     maxWebsocketConnsPerKey: 0
+    # -- Max bytes transferred per WebSocket direction (0 = unlimited)
+    maxWebsocketTransferBytes: 0
+    # -- WebSocket idle timeout — close connections with no activity
+    websocketIdleTimeout: ""
 
     tls:
       # -- Enable TLS on the proxy listener
@@ -450,14 +456,25 @@ edgequota:
     idleConnTimeout: "90s"
     # -- Skip TLS verification for backend
     tlsInsecureSkipVerify: false
+    # -- Max request body size in bytes (0 = unlimited)
+    maxRequestBodySize: 0
     # -- Backend transport tuning
     transport:
       dialTimeout: ""
       dialKeepAlive: ""
       tlsHandshakeTimeout: ""
       h2ReadIdleTimeout: ""
+      expectContinueTimeout: ""
       h2PingTimeout: ""
       websocketDialTimeout: ""
+    # -- URL policy for dynamic backend URLs (SSRF protection)
+    urlPolicy:
+      # -- Allowed URL schemes. Default: ["http", "https"]
+      allowedSchemes: []
+      # -- Block RFC 1918, loopback, link-local, and cloud metadata IPs. Default: true
+      denyPrivateNetworks: true
+      # -- Optional host allowlist (exact match, case-insensitive). Empty = allow all
+      allowedHosts: []
 
   # --- Redis ---
   redis:
@@ -510,8 +527,16 @@ edgequota:
     failurePolicy: "passThrough"
     # -- HTTP status code on rate limit (4xx or 5xx)
     failureCode: 429
+    # -- Redis key prefix
+    keyPrefix: ""
     # -- Minimum Redis key TTL
     minTTL: ""
+    # -- Max distinct tenant label values for per-tenant metrics (0 = default 1000)
+    maxTenantLabels: 0
+    # -- Max Redis recovery attempts before giving up (0 = unlimited)
+    maxRecoveryAttempts: 0
+    # -- Global RPS safety valve for passthrough mode (0 = disabled)
+    globalPassthroughRps: 0
     # -- Key extraction strategy
     keyStrategy:
       # -- Strategy type: clientIP, header, composite
@@ -524,8 +549,45 @@ edgequota:
       trustedProxies: []
       # -- X-Forwarded-For depth to use
       trustedIPDepth: 0
-    # -- External rate-limit service configuration (raw YAML, passed through)
-    external: {}
+    # -- External rate-limit service configuration
+    external:
+      # -- Enable external rate-limit service
+      enabled: false
+      # -- Request timeout
+      timeout: "5s"
+      # -- Default cache TTL when response has no cache headers
+      cacheTTL: "1m"
+      http:
+        # -- External RL HTTP URL
+        url: ""
+      grpc:
+        # -- External RL gRPC address
+        address: ""
+        tls:
+          # -- Enable TLS for external RL gRPC
+          enabled: false
+          # -- CA file for TLS verification
+          caFile: ""
+          # -- Override TLS server name
+          serverName: ""
+      # -- Header filter for requests to external RL service
+      headerFilter:
+        # -- Allow only these headers (takes precedence over denyList)
+        allowList: []
+        # -- Deny these headers
+        denyList: []
+      # -- Max concurrent in-flight requests (0 = default 50)
+      maxConcurrentRequests: 0
+      # -- Max per-tenant circuit breaker entries (0 = default 10000)
+      maxCircuitBreakers: 0
+      # -- Max acceptable latency before tripping circuit breaker
+      maxLatency: ""
+      # -- Circuit breaker settings for external RL
+      circuitBreaker:
+        # -- Failures before opening circuit (0 = default 5)
+        threshold: 0
+        # -- Time before half-open retry
+        resetTimeout: ""
 
   # --- Auth (optional) ---
   auth:
@@ -535,9 +597,15 @@ edgequota:
     timeout: "5s"
     # -- Auth failure policy: failclosed, passthrough
     failurePolicy: "failclosed"
+    # -- Forward the original request body to the auth service
+    propagateRequestBody: false
+    # -- Max body size to forward to auth (bytes, 0 = unlimited)
+    maxAuthBodySize: 0
     http:
       # -- Auth HTTP URL
       url: ""
+      # -- Forward original request headers to auth HTTP service
+      forwardOriginalHeaders: false
     grpc:
       # -- Auth gRPC address
       address: ""
@@ -546,6 +614,50 @@ edgequota:
         enabled: false
         # -- CA file for auth gRPC TLS
         caFile: ""
+        # -- Override TLS server name for auth gRPC
+        serverName: ""
+    # -- Header filter for requests to auth service
+    headerFilter:
+      # -- Allow only these headers (takes precedence over denyList)
+      allowList: []
+      # -- Deny these headers
+      denyList: []
+    # -- Circuit breaker for auth service
+    circuitBreaker:
+      # -- Failures before opening circuit (0 = default)
+      threshold: 0
+      # -- Time before half-open retry
+      resetTimeout: ""
+
+  # --- Events (optional usage event emission) ---
+  events:
+    # -- Enable usage event emission
+    enabled: false
+    http:
+      # -- Events HTTP webhook URL
+      url: ""
+    grpc:
+      # -- Events gRPC address
+      address: ""
+      tls:
+        # -- Enable TLS for events gRPC
+        enabled: false
+        # -- CA file for TLS verification
+        caFile: ""
+        # -- Override TLS server name
+        serverName: ""
+    # -- Number of events per batch
+    batchSize: 0
+    # -- Flush interval for event batches
+    flushInterval: ""
+    # -- Internal event buffer size
+    bufferSize: 0
+    # -- Header filter for events payload
+    headerFilter:
+      # -- Allow only these headers
+      allowList: []
+      # -- Deny these headers
+      denyList: []
 
   # --- Logging ---
   logging:
