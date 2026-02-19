@@ -398,6 +398,9 @@ data:
       {{- with .Values.edgequota.logging.format }}
       format: {{ . | quote }}
       {{- end }}
+      {{- if not (kindIs "invalid" .Values.edgequota.logging.accessLogEnabled) }}
+      access_log_enabled: {{ .Values.edgequota.logging.accessLogEnabled }}
+      {{- end }}
 
     # --- Tracing (optional) ---
     {{- if .Values.edgequota.tracing.enabled }}

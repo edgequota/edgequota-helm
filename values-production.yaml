@@ -248,12 +248,21 @@ networkPolicy:
         protocol: TCP
     to:
       - namespaceSelector: {}
-  # Backend egress — adjust to your backend's location
+  # Backend egress — use the backend's actual pod/targetPort, not the Service
+  # port, because Cilium enforces NetworkPolicy on post-DNAT packets.
+  # For example, if the backend Service maps 443→8443 and 80→8000,
+  # you must allow 8443 and 8000 here.
   backendEgress:
     ports:
       - port: 8080
         protocol: TCP
+      - port: 8443
+        protocol: TCP
       - port: 443
+        protocol: TCP
+      - port: 8000
+        protocol: TCP
+      - port: 80
         protocol: TCP
     to:
       - namespaceSelector: {}
@@ -400,6 +409,7 @@ edgequota:
   logging:
     level: "info"
     format: "json"
+    accessLogEnabled: true
 
   tracing:
     enabled: true

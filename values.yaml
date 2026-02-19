@@ -665,6 +665,8 @@ edgequota:
     level: "info"
     # -- Log format: json, text
     format: "json"
+    # -- Emit per-request access logs (method, path, status, duration, etc.)
+    accessLogEnabled: true
 
   # --- Tracing (optional) ---
   tracing:
