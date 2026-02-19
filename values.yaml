@@ -432,6 +432,10 @@ edgequota:
       minVersion: ""
       # -- Enable HTTP/3 (QUIC) — requires TLS
       http3Enabled: false
+      # -- Port to advertise in Alt-Svc header for HTTP/3 discovery.
+      # Set this to the external-facing port (e.g. 443) when running behind
+      # a Service or load balancer. 0 = use the container's listen port.
+      http3AdvertisePort: 0
 
   # --- Admin server ---
   admin:

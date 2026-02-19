@@ -44,6 +44,9 @@ data:
         {{- end }}
         {{- if .Values.edgequota.server.tls.http3Enabled }}
         http3_enabled: true
+        {{- if .Values.edgequota.server.tls.http3AdvertisePort }}
+        http3_advertise_port: {{ .Values.edgequota.server.tls.http3AdvertisePort }}
+        {{- end }}
         {{- end }}
       {{- end }}
 
