@@ -3,7 +3,7 @@ name: edgequota
 description: A Helm chart for EdgeQuota - distributed rate-limiting reverse proxy for Kubernetes
 type: application
 version: 0.1.0
-appVersion: "0.1.9"
+appVersion: "0.1.10"
 home: https://github.com/edgequota/edgequota
 sources:
   - https://github.com/edgequota/edgequota
