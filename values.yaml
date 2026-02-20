@@ -468,6 +468,8 @@ edgequota:
       # "auto" probes the static backend via TLS ALPN at startup; for dynamic
       # backends (no static URL) it defaults to h1 since targets vary per-request.
       # gRPC always uses h2 regardless of this setting.
+      # Can be overridden per-request by the external rate-limit service via the
+      # "backend_protocol" field in the GetLimitsResponse.
       backendProtocol: "auto"
       dialTimeout: ""
       dialKeepAlive: ""
