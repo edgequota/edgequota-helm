@@ -64,9 +64,10 @@ data:
       {{- end }}
 
     # --- Backend ---
-    {{- if .Values.edgequota.backend.url }}
     backend:
-      url: {{ .Values.edgequota.backend.url | quote }}
+      {{- with .Values.edgequota.backend.url }}
+      url: {{ . | quote }}
+      {{- end }}
       {{- with .Values.edgequota.backend.timeout }}
       timeout: {{ . | quote }}
       {{- end }}
@@ -84,6 +85,9 @@ data:
       {{- end }}
       {{- with .Values.edgequota.backend.transport }}
       transport:
+        {{- with .backendProtocol }}
+        backend_protocol: {{ . | quote }}
+        {{- end }}
         {{- with .dialTimeout }}
         dial_timeout: {{ . | quote }}
         {{- end }}
@@ -120,7 +124,6 @@ data:
           {{- toYaml . | nindent 10 }}
         {{- end }}
       {{- end }}
-    {{- end }}
 
     # --- Redis ---
     redis:

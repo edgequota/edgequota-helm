@@ -464,6 +464,11 @@ edgequota:
     maxRequestBodySize: 0
     # -- Backend transport tuning
     transport:
+      # -- Backend protocol for non-gRPC traffic (auto | h1 | h2 | h3).
+      # "auto" probes the static backend via TLS ALPN at startup; for dynamic
+      # backends (no static URL) it defaults to h1 since targets vary per-request.
+      # gRPC always uses h2 regardless of this setting.
+      backendProtocol: "auto"
       dialTimeout: ""
       dialKeepAlive: ""
       tlsHandshakeTimeout: ""
