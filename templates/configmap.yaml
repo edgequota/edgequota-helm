@@ -181,6 +181,15 @@ data:
       {{- with .Values.edgequota.cacheRedis.poolSize }}
       pool_size: {{ . }}
       {{- end }}
+      {{- with .Values.edgequota.cacheRedis.dialTimeout }}
+      dial_timeout: {{ . | quote }}
+      {{- end }}
+      {{- with .Values.edgequota.cacheRedis.readTimeout }}
+      read_timeout: {{ . | quote }}
+      {{- end }}
+      {{- with .Values.edgequota.cacheRedis.writeTimeout }}
+      write_timeout: {{ . | quote }}
+      {{- end }}
       {{- if .Values.edgequota.cacheRedis.tls.enabled }}
       tls:
         enabled: true

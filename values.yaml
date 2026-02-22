@@ -383,6 +383,10 @@ secrets:
   cacheRedisPassword: ""
   # -- Cache Redis username
   cacheRedisUsername: ""
+  # -- Cache Redis Sentinel password
+  cacheRedisSentinelPassword: ""
+  # -- Cache Redis Sentinel username
+  cacheRedisSentinelUsername: ""
   # -- Extra key-value pairs to include in the Secret
   extra: {}
 
@@ -627,6 +631,12 @@ edgequota:
     masterName: ""
     db: 0
     poolSize: 10
+    # -- Dial timeout
+    dialTimeout: "5s"
+    # -- Read timeout
+    readTimeout: "3s"
+    # -- Write timeout
+    writeTimeout: "3s"
     tls:
       enabled: false
       insecureSkipVerify: false

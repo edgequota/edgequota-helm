@@ -278,6 +278,11 @@ secrets:
       key: redis-password
     - envVar: EDGEQUOTA_REDIS_SENTINEL_PASSWORD
       key: redis-sentinel-password
+    # -- Uncomment when cacheRedis is enabled
+    # - envVar: EDGEQUOTA_CACHE_REDIS_PASSWORD
+    #   key: cache-redis-password
+    # - envVar: EDGEQUOTA_CACHE_REDIS_SENTINEL_PASSWORD
+    #   key: cache-redis-sentinel-password
 
 # =============================================================================
 # Scheduling — multi-AZ spread
@@ -358,6 +363,23 @@ edgequota:
     writeTimeout: "3s"
     tls:
       enabled: false
+
+  # -- Dedicated cache Redis for external rate-limit cache (uncomment to enable)
+  # cacheRedis:
+  #   enabled: true
+  #   endpoints:
+  #     - "cache-redis-node-0.cache-redis-headless:26379"
+  #     - "cache-redis-node-1.cache-redis-headless:26379"
+  #     - "cache-redis-node-2.cache-redis-headless:26379"
+  #   mode: "sentinel"
+  #   masterName: "mymaster"
+  #   db: 0
+  #   poolSize: 50
+  #   dialTimeout: "5s"
+  #   readTimeout: "3s"
+  #   writeTimeout: "3s"
+  #   tls:
+  #     enabled: false
 
   rateLimit:
     average: 1000

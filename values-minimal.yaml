@@ -27,6 +27,13 @@ edgequota:
     burst: 20
     period: "1s"
 
+  # -- Uncomment to enable a dedicated cache Redis instance
+  # cacheRedis:
+  #   enabled: true
+  #   endpoints:
+  #     - "cache-redis:6379"
+  #   mode: "single"
+
   # -- Uncomment to enable external auth
   # auth:
   #   enabled: true

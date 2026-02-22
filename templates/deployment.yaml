@@ -133,6 +133,20 @@ spec:
                   name: {{ .Values.secrets.existingSecret | default (include "edgequota.fullname" .) }}
                   key: cache-redis-username
             {{- end }}
+            {{- if .Values.secrets.cacheRedisSentinelPassword }}
+            - name: EDGEQUOTA_CACHE_REDIS_SENTINEL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.existingSecret | default (include "edgequota.fullname" .) }}
+                  key: cache-redis-sentinel-password
+            {{- end }}
+            {{- if .Values.secrets.cacheRedisSentinelUsername }}
+            - name: EDGEQUOTA_CACHE_REDIS_SENTINEL_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.existingSecret | default (include "edgequota.fullname" .) }}
+                  key: cache-redis-sentinel-username
+            {{- end }}
             {{- else if .Values.secrets.existingSecret }}
             {{- range .Values.secrets.existingSecretMappings }}
             - name: {{ .envVar }}
