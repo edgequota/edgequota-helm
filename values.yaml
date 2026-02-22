@@ -86,6 +86,27 @@ podSecurityContext:
   seccompProfile:
     type: RuntimeDefault
 
+# -- Pod-level sysctls (rendered into securityContext.sysctls).
+# This is one of the options for raising the kernel UDP buffer limits
+# required by HTTP/3 backend traffic (backendProtocol: "h3"). See the
+# "HTTP/3 backend — UDP buffer prerequisites" section below initContainers
+# for a full explanation of the problem and all available solutions.
+#
+# net.core.rmem_max and net.core.wmem_max are namespaced sysctls, but
+# Kubernetes considers them "unsafe". To use this approach, the kubelet on
+# every node that schedules EdgeQuota pods must be started with:
+#   --allowed-unsafe-sysctls=net.core.rmem_max,net.core.wmem_max
+# Without this flag, the pod will be rejected by the kubelet at admission.
+#
+# If your cluster does not allow unsafe sysctls, use the initContainers
+# approach instead (see below).
+#
+# Example:
+#   sysctls:
+#     net.core.rmem_max: "7500000"
+#     net.core.wmem_max: "7500000"
+sysctls: {}
+
 # -- Container security context (applied to the edgequota container)
 containerSecurityContext:
   allowPrivilegeEscalation: false
@@ -390,7 +411,71 @@ extraEnvFrom: []
 extraVolumeMounts: []
 # -- Extra volumes
 extraVolumes: []
-# -- Init containers
+# -- Init containers (list of complete container specs).
+#
+# ============================================================================
+# HTTP/3 backend — UDP buffer prerequisites
+# ============================================================================
+# When backendProtocol is set to "h3", EdgeQuota uses quic-go to speak
+# HTTP/3 (QUIC) to the upstream backend over UDP. quic-go requires the
+# kernel UDP receive buffer (net.core.rmem_max) to be at least 7168 KiB
+# (~7 MiB / 7340032 bytes). If the limit is too low, you will see this
+# log line at startup:
+#
+#   "failed to sufficiently increase receive buffer size
+#    (was: 208 kiB, wanted: 7168 kiB, got: 416 kiB)"
+#
+# and every QUIC connection to the backend will time out after 5 seconds,
+# producing 502 errors. This happens because containers running with the
+# default restricted security context (readOnlyRootFilesystem: true,
+# capabilities.drop: ALL) cannot raise the buffer beyond ~2x the default
+# — far below the 7 MiB quic-go needs.
+#
+# The fix requires TWO parts:
+#
+#   1. Raise the kernel limit BEFORE EdgeQuota starts — so that the
+#      setsockopt(SO_RCVBUF) syscall can actually succeed.
+#
+#   2. Set h3UdpReceiveBufferSize / h3UdpSendBufferSize in the transport
+#      config below — so EdgeQuota requests the correct buffer size when
+#      creating the QUIC socket.
+#
+# There are three ways to accomplish part 1. Choose ONE:
+#
+# ── Option A: Privileged init container (recommended) ──────────────────
+# A small init container runs "sysctl -w" before EdgeQuota starts. This
+# works on any cluster that allows privileged containers and does NOT
+# require kubelet configuration changes. The sysctl is namespaced, so it
+# only affects this pod's network namespace.
+#
+# Example:
+#   initContainers:
+#     - name: sysctl-udp-buffers
+#       image: busybox:1.37
+#       command:
+#         - sh
+#         - -c
+#         - |
+#           sysctl -w net.core.rmem_max=7500000
+#           sysctl -w net.core.wmem_max=7500000
+#       securityContext:
+#         privileged: true
+#
+# ── Option B: Pod-level sysctls (see "sysctls" above) ─────────────────
+# Uses securityContext.sysctls on the pod spec. Cleaner than an init
+# container, but requires the kubelet to be started with:
+#   --allowed-unsafe-sysctls=net.core.rmem_max,net.core.wmem_max
+# This may not be available on managed Kubernetes services.
+#
+# ── Option C: Node-level tuning ───────────────────────────────────────
+# Set the sysctl on the nodes themselves via a DaemonSet, cloud-init, or
+# the node OS configuration. This affects ALL pods on the node and does
+# not require any pod-level changes, but requires node access.
+#
+# After choosing one of the above, also set the transport buffer sizes:
+#   edgequota.backend.transport.h3UdpReceiveBufferSize: 7500000
+#   edgequota.backend.transport.h3UdpSendBufferSize: 7500000
+# ============================================================================
 initContainers: []
 # -- Sidecar containers
 sidecars: []
@@ -470,6 +555,12 @@ edgequota:
       # gRPC always uses h2 regardless of this setting.
       # Can be overridden per-request by the external rate-limit service via the
       # "backend_protocol" field in the GetLimitsResponse.
+      #
+      # IMPORTANT: Setting this to "h3" requires raising the kernel UDP buffer
+      # limits. Without this, QUIC connections will time out and produce 502s.
+      # See the "HTTP/3 backend — UDP buffer prerequisites" section under
+      # initContainers above for setup instructions. You must ALSO set
+      # h3UdpReceiveBufferSize and h3UdpSendBufferSize below.
       backendProtocol: "auto"
       dialTimeout: ""
       dialKeepAlive: ""
@@ -478,6 +569,20 @@ edgequota:
       expectContinueTimeout: ""
       h2PingTimeout: ""
       websocketDialTimeout: ""
+      # -- UDP receive buffer size (bytes) for the QUIC backend socket (SO_RCVBUF).
+      # quic-go needs at least 7340032 bytes (~7 MiB). The recommended value is
+      # 7500000 (matches the quic-go wiki). This setting tells EdgeQuota what
+      # buffer size to request from the kernel. The kernel will silently cap it
+      # at net.core.rmem_max, so you MUST also raise that limit via an init
+      # container, pod sysctls, or node-level tuning. See the "HTTP/3 backend —
+      # UDP buffer prerequisites" section under initContainers for details.
+      # 0 = let quic-go manage buffers internally (it will attempt ~7 MiB and
+      # log a warning if the kernel caps it lower).
+      h3UdpReceiveBufferSize: 0
+      # -- UDP send buffer size (bytes) for the QUIC backend socket (SO_SNDBUF).
+      # Same considerations as h3UdpReceiveBufferSize; the kernel caps this at
+      # net.core.wmem_max. 0 = let quic-go manage buffers internally.
+      h3UdpSendBufferSize: 0
     # -- URL policy for dynamic backend URLs (SSRF protection)
     urlPolicy:
       # -- Allowed URL schemes. Default: ["http", "https"]

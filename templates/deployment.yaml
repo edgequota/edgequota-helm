@@ -45,9 +45,18 @@ spec:
       {{- end }}
       serviceAccountName: {{ include "edgequota.serviceAccountName" . }}
       automountServiceAccountToken: {{ .Values.serviceAccount.automountServiceAccountToken }}
-      {{- if .Values.podSecurityContext }}
+      {{- if or .Values.podSecurityContext .Values.sysctls }}
       securityContext:
-        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+        {{- with .Values.podSecurityContext }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- with .Values.sysctls }}
+        sysctls:
+          {{- range $name, $value := . }}
+          - name: {{ $name }}
+            value: {{ $value | quote }}
+          {{- end }}
+        {{- end }}
       {{- end }}
       terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds | default 60 }}
       {{- with .Values.initContainers }}

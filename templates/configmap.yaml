@@ -109,6 +109,12 @@ data:
         {{- with .websocketDialTimeout }}
         websocket_dial_timeout: {{ . | quote }}
         {{- end }}
+        {{- if .h3UdpReceiveBufferSize }}
+        h3_udp_receive_buffer_size: {{ .h3UdpReceiveBufferSize }}
+        {{- end }}
+        {{- if .h3UdpSendBufferSize }}
+        h3_udp_send_buffer_size: {{ .h3UdpSendBufferSize }}
+        {{- end }}
       {{- end }}
       {{- if .Values.edgequota.backend.urlPolicy }}
       url_policy:
