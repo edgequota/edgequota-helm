@@ -505,6 +505,10 @@ edgequota:
     drainTimeout: "30s"
     # -- Per-request timeout (0 = no timeout)
     requestTimeout: ""
+    # -- Max concurrent in-flight requests. Excess requests receive 503. (0 = unlimited)
+    maxConcurrentRequests: 0
+    # -- WebSocket Origin header allowlist. Empty = allow all origins.
+    allowedWebsocketOrigins: []
     # -- Max WebSocket connections per rate-limit key (0 = unlimited)
     maxWebsocketConnsPerKey: 0
     # -- Max bytes transferred per WebSocket direction (0 = unlimited)
@@ -679,6 +683,8 @@ edgequota:
     external:
       # -- Enable external rate-limit service
       enabled: false
+      # -- Failure policy when external RL is unreachable: passthrough, failclosed
+      failurePolicy: "passthrough"
       # -- Request timeout
       timeout: "5s"
       # -- Default cache TTL when response has no cache headers
@@ -748,6 +754,10 @@ edgequota:
       allowList: []
       # -- Deny these headers
       denyList: []
+    # -- Headers the auth service is allowed to inject into the proxied request.
+    # Only these header names (case-insensitive) will be forwarded from the
+    # auth response to the upstream backend. Empty = no injection.
+    allowedInjectionHeaders: []
     # -- Circuit breaker for auth service
     circuitBreaker:
       # -- Failures before opening circuit (0 = default)
@@ -762,6 +772,14 @@ edgequota:
     http:
       # -- Events HTTP webhook URL
       url: ""
+      # -- Custom headers attached to every events HTTP request.
+      # Values are treated as secrets (redacted in logs and /v1/config).
+      # Restricted headers (Host, Content-Type, Content-Length, etc.) are rejected.
+      headers: {}
+      # Example:
+      #   headers:
+      #     Authorization: "Bearer my-token"
+      #     X-Source: "edgequota"
     grpc:
       # -- Events gRPC address
       address: ""
@@ -778,6 +796,10 @@ edgequota:
     flushInterval: ""
     # -- Internal event buffer size
     bufferSize: 0
+    # -- Max send retries per batch before dropping (0 = default 3)
+    maxRetries: 0
+    # -- Initial retry backoff (doubles per attempt)
+    retryBackoff: ""
     # -- Header filter for events payload
     headerFilter:
       # -- Allow only these headers

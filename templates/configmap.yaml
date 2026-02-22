@@ -25,6 +25,13 @@ data:
       {{- with .Values.edgequota.server.requestTimeout }}
       request_timeout: {{ . | quote }}
       {{- end }}
+      {{- if .Values.edgequota.server.maxConcurrentRequests }}
+      max_concurrent_requests: {{ .Values.edgequota.server.maxConcurrentRequests }}
+      {{- end }}
+      {{- with .Values.edgequota.server.allowedWebsocketOrigins }}
+      allowed_websocket_origins:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       {{- if .Values.edgequota.server.maxWebsocketConnsPerKey }}
       max_websocket_conns_per_key: {{ .Values.edgequota.server.maxWebsocketConnsPerKey }}
       {{- end }}
@@ -253,6 +260,9 @@ data:
       {{- if .Values.edgequota.rateLimit.external.enabled }}
       external:
         enabled: true
+        {{- with .Values.edgequota.rateLimit.external.failurePolicy }}
+        failure_policy: {{ . | quote }}
+        {{- end }}
         {{- with .Values.edgequota.rateLimit.external.timeout }}
         timeout: {{ . | quote }}
         {{- end }}
@@ -356,6 +366,10 @@ data:
           {{- toYaml . | nindent 10 }}
         {{- end }}
       {{- end }}
+      {{- with .Values.edgequota.auth.allowedInjectionHeaders }}
+      allowed_injection_headers:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       {{- if or .Values.edgequota.auth.circuitBreaker.threshold .Values.edgequota.auth.circuitBreaker.resetTimeout }}
       circuit_breaker:
         {{- if .Values.edgequota.auth.circuitBreaker.threshold }}
@@ -374,6 +388,12 @@ data:
       {{- if .Values.edgequota.events.http.url }}
       http:
         url: {{ .Values.edgequota.events.http.url | quote }}
+        {{- with .Values.edgequota.events.http.headers }}
+        headers:
+          {{- range $key, $val := . }}
+          {{ $key }}: {{ $val | quote }}
+          {{- end }}
+        {{- end }}
       {{- end }}
       {{- if .Values.edgequota.events.grpc.address }}
       grpc:
@@ -397,6 +417,12 @@ data:
       {{- end }}
       {{- if .Values.edgequota.events.bufferSize }}
       buffer_size: {{ .Values.edgequota.events.bufferSize }}
+      {{- end }}
+      {{- if .Values.edgequota.events.maxRetries }}
+      max_retries: {{ .Values.edgequota.events.maxRetries }}
+      {{- end }}
+      {{- with .Values.edgequota.events.retryBackoff }}
+      retry_backoff: {{ . | quote }}
       {{- end }}
       {{- if or .Values.edgequota.events.headerFilter.allowList .Values.edgequota.events.headerFilter.denyList }}
       header_filter:
