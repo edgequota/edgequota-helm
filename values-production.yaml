@@ -382,31 +382,54 @@ edgequota:
   #     enabled: false
 
   rateLimit:
-    average: 1000
-    burst: 100
-    period: "1s"
     failurePolicy: "inMemoryFallback"
     failureCode: 429
     maxRecoveryAttempts: 20
-    keyStrategy:
-      type: "clientIP"
-      trustedProxies:
-        - "10.0.0.0/8"
-        - "172.16.0.0/12"
-        - "192.168.0.0/16"
-      trustedIPDepth: 1
+    static:
+      average: 1000
+      burst: 100
+      period: "1s"
+      keyStrategy:
+        type: "clientIP"
+        trustedProxies:
+          - "10.0.0.0/8"
+          - "172.16.0.0/12"
+          - "192.168.0.0/16"
+        trustedIPDepth: 1
 
     # -- External rate-limit service (uncomment to enable)
     # external:
     #   enabled: true
     #   timeout: "3s"
-    #   cacheTTL: "30s"
     #   http:
     #     url: "http://rl-service.default:8080/limits"
     #   maxConcurrentRequests: 100
     #   circuitBreaker:
     #     threshold: 5
     #     resetTimeout: "30s"
+    #   # Caching is driven by Cache-Control headers returned by the external
+    #   # service — no default TTL. The service must explicitly opt in via
+    #   # Cache-Control: public, max-age=N or the cache_max_age_seconds body field.
+    #   fallback:
+    #     average: 1000
+    #     burst: 100
+    #     period: "1s"
+    #     keyStrategy:
+    #       type: "clientIP"
+
+  # -- CDN-style response cache (uncomment to enable)
+  # cache:
+  #   enabled: true
+  #   maxBodySize: "10MB"
+  # -- Optional dedicated Redis for the response cache
+  # responseCacheRedis:
+  #   endpoints:
+  #     - "cdn-redis-node-0.cdn-redis-headless:26379"
+  #     - "cdn-redis-node-1.cdn-redis-headless:26379"
+  #     - "cdn-redis-node-2.cdn-redis-headless:26379"
+  #   mode: "sentinel"
+  #   masterName: "mymaster"
+  #   poolSize: 50
 
   # -- Auth (uncomment to enable)
   # auth:

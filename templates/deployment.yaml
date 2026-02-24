@@ -147,6 +147,34 @@ spec:
                   name: {{ .Values.secrets.existingSecret | default (include "edgequota.fullname" .) }}
                   key: cache-redis-sentinel-username
             {{- end }}
+            {{- if .Values.secrets.responseCacheRedisPassword }}
+            - name: EDGEQUOTA_RESPONSE_CACHE_REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.existingSecret | default (include "edgequota.fullname" .) }}
+                  key: response-cache-redis-password
+            {{- end }}
+            {{- if .Values.secrets.responseCacheRedisUsername }}
+            - name: EDGEQUOTA_RESPONSE_CACHE_REDIS_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.existingSecret | default (include "edgequota.fullname" .) }}
+                  key: response-cache-redis-username
+            {{- end }}
+            {{- if .Values.secrets.responseCacheRedisSentinelPassword }}
+            - name: EDGEQUOTA_RESPONSE_CACHE_REDIS_SENTINEL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.existingSecret | default (include "edgequota.fullname" .) }}
+                  key: response-cache-redis-sentinel-password
+            {{- end }}
+            {{- if .Values.secrets.responseCacheRedisSentinelUsername }}
+            - name: EDGEQUOTA_RESPONSE_CACHE_REDIS_SENTINEL_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.existingSecret | default (include "edgequota.fullname" .) }}
+                  key: response-cache-redis-sentinel-username
+            {{- end }}
             {{- else if .Values.secrets.existingSecret }}
             {{- range .Values.secrets.existingSecretMappings }}
             - name: {{ .envVar }}

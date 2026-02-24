@@ -387,6 +387,14 @@ secrets:
   cacheRedisSentinelPassword: ""
   # -- Cache Redis Sentinel username
   cacheRedisSentinelUsername: ""
+  # -- Response Cache Redis password (for dedicated response_cache_redis)
+  responseCacheRedisPassword: ""
+  # -- Response Cache Redis username
+  responseCacheRedisUsername: ""
+  # -- Response Cache Redis Sentinel password
+  responseCacheRedisSentinelPassword: ""
+  # -- Response Cache Redis Sentinel username
+  responseCacheRedisSentinelUsername: ""
   # -- Extra key-value pairs to include in the Secret
   extra: {}
 
@@ -543,7 +551,9 @@ edgequota:
 
   # --- Backend (upstream) ---
   backend:
-    # -- Backend URL (required unless using external rate limit mode)
+    # -- Default backend URL. Required unless external rate-limit mode is used
+    # (in which case the external service provides per-request backend_url).
+    # Example: "http://my-service.default.svc.cluster.local:8080"
     url: ""
     # -- Request timeout to backend
     timeout: "30s"
@@ -625,15 +635,21 @@ edgequota:
       # -- Skip TLS verification
       insecureSkipVerify: false
 
-  # --- Cache Redis (optional dedicated instance) ---
-  cacheRedis:
-    # -- Enable a separate Redis for external rate-limit cache
-    enabled: false
-    # -- Cache Redis endpoint(s); list of host:port strings
+  # --- Response Cache Redis (optional dedicated instance) ---
+  # Dedicated Redis for the CDN-style response cache.
+  # Fallback resolution order: response_cache_redis → cache_redis → main redis.
+  # Leave endpoints empty to share the main Redis (default).
+  # Credentials are set via secrets.responseCacheRedis* fields.
+  responseCacheRedis:
+    # -- Response cache Redis endpoint(s). Empty = use main Redis (or cache_redis if set).
     endpoints: []
+    # -- Redis mode: single, replication, sentinel, cluster
     mode: "single"
+    # -- Sentinel master name (required for sentinel mode)
     masterName: ""
+    # -- Redis database number
     db: 0
+    # -- Connection pool size
     poolSize: 10
     # -- Dial timeout
     dialTimeout: "5s"
@@ -642,17 +658,158 @@ edgequota:
     # -- Write timeout
     writeTimeout: "3s"
     tls:
+      # -- Enable TLS for response cache Redis connections
       enabled: false
+      # -- Skip TLS verification (not recommended in production)
       insecureSkipVerify: false
 
+  # --- Cache Redis (optional dedicated instance for external RL cache) ---
+  # Dedicated Redis for caching external rate-limit service responses.
+  # When not enabled, EdgeQuota shares the main Redis for RL caching.
+  # NOTE: This is for the *external rate-limit response cache* only.
+  # For the CDN-style response cache, use responseCacheRedis above.
+  cacheRedis:
+    # -- Enable a separate Redis for external rate-limit cache
+    enabled: false
+    # -- Cache Redis endpoint(s); list of host:port strings
+    endpoints: []
+    # -- Redis mode: single, replication, sentinel, cluster
+    mode: "single"
+    # -- Sentinel master name (required for sentinel mode)
+    masterName: ""
+    # -- Redis database number
+    db: 0
+    # -- Connection pool size
+    poolSize: 10
+    # -- Dial timeout
+    dialTimeout: "5s"
+    # -- Read timeout
+    readTimeout: "3s"
+    # -- Write timeout
+    writeTimeout: "3s"
+    tls:
+      # -- Enable TLS for cache Redis connections
+      enabled: false
+      # -- Skip TLS verification (not recommended in production)
+      insecureSkipVerify: false
+
+  # =============================================================================
+  # CDN-style Response Cache
+  # =============================================================================
+  # When enabled, EdgeQuota acts as a reverse-proxy cache (like a CDN). Upstream
+  # responses are cached in Redis and served on subsequent requests without
+  # touching the backend, as long as Cache-Control headers permit it.
+  #
+  # ── How caching works ──────────────────────────────────────────────────
+  # Backends opt in to caching by returning standard HTTP Cache-Control headers:
+  #   Cache-Control: public, max-age=300     → cache for 5 minutes
+  #   Cache-Control: no-store                → never cache
+  #   Cache-Control: private                 → never cache
+  #
+  # Only GET requests and 200/301 responses are ever cached. POST, PUT, PATCH,
+  # DELETE, WebSocket, gRPC, and SSE traffic bypasses the cache entirely.
+  #
+  # The cache key is: method | path | query | Vary-header-values
+  # (headers not listed in the upstream's Vary response header are ignored).
+  #
+  # ── Cache invalidation via admin API ───────────────────────────────────
+  # POST /v1/cache/purge        { "url": "/path", "method": "GET" }
+  # POST /v1/cache/purge/tags   { "tags": ["product-123", "category-shoes"] }
+  #
+  # Tags are set by backends via the Surrogate-Key or Cache-Tag response header:
+  #   Surrogate-Key: product-123 category-shoes
+  #
+  # ── Redis configuration ─────────────────────────────────────────────────
+  # The response cache uses, in priority order:
+  #   1. responseCacheRedis  (dedicated cluster, if endpoints are set)
+  #   2. cacheRedis          (shared ext-RL cache Redis, if enabled)
+  #   3. main redis          (fallback)
+  #
+  # For high-traffic caches, a dedicated Redis instance (responseCacheRedis)
+  # is recommended to avoid contention with rate-limit counters.
+  #
+  # ── Example: enable for static assets ──────────────────────────────────
+  #   cache:
+  #     enabled: true
+  #     maxBodySize: "5MB"
+  #
+  # ── Example: with dedicated Redis ──────────────────────────────────────
+  #   cache:
+  #     enabled: true
+  #     maxBodySize: "10MB"
+  #   responseCacheRedis:
+  #     endpoints:
+  #       - "cdn-redis:6379"
+  #     mode: "single"
+  #     poolSize: 50
+  # =============================================================================
+  cache:
+    # -- Enable the CDN-style response cache
+    enabled: false
+    # -- Maximum response body size to cache. Responses larger than this are
+    # passed through without caching. Human-readable: "512KB", "1MB", "10MB".
+    maxBodySize: "1MB"
+
   # --- Rate Limiting ---
+  #
+  # Rate limiting has two modes:
+  #
+  # 1. STATIC ONLY (default) -- EdgeQuota enforces fixed average/burst/period
+  #    limits, extracting the rate-limit key locally (by client IP, header, etc).
+  #    Configure `rateLimit.static.*`.
+  #
+  # 2. EXTERNAL RL -- EdgeQuota delegates quota resolution to an external
+  #    service. The external service decides the limits per request. EdgeQuota
+  #    skips local key extraction. The request sent to the external service
+  #    contains only headers, method, and path (no key field).
+  #    Configure `rateLimit.external.*`.
+  #    When the external service is unavailable, EdgeQuota falls back to the
+  #    limits defined in `rateLimit.external.fallback.*`.
+  #
+  # ── Example A: Static rate limiting (per-IP) ────────────────────────
+  #   rateLimit:
+  #     static:
+  #       average: 100
+  #       burst: 50
+  #       period: "1s"
+  #       keyStrategy:
+  #         type: "clientIP"
+  #
+  # ── Example B: External RL for FE/static assets ─────────────────────
+  #   rateLimit:
+  #     external:
+  #       enabled: true
+  #       http:
+  #         url: "http://limits-service:8080/limits"
+  #       fallback:
+  #         average: 5000
+  #         burst: 2000
+  #         period: "1s"
+  #         keyStrategy:
+  #           type: "global"
+  #           globalKey: "fe-assets"
+  #
+  # ── Example C: External RL with per-tenant header fallback ──────────
+  #   rateLimit:
+  #     external:
+  #       enabled: true
+  #       http:
+  #         url: "http://limits-service:8080/limits"
+  #       fallback:
+  #         average: 100
+  #         burst: 50
+  #         period: "1s"
+  #         keyStrategy:
+  #           type: "header"
+  #           headerName: "X-Tenant-Id"
+  #
+  # NOTE: External RL response caching is driven by the Cache-Control header
+  # (or cache_max_age_seconds body field) returned by the external service.
+  # No default TTL is applied — the external service must explicitly opt in
+  # to caching. Ephemeral headers (tracing IDs, X-Request-Id, etc.) are
+  # automatically excluded from cache keys.
+  #
   rateLimit:
-    # -- Requests per period (0 = disabled / passthrough)
-    average: 0
-    # -- Burst capacity
-    burst: 1
-    # -- Time period for the rate limit
-    period: "1s"
     # -- Failure policy: passThrough, failClosed, inMemoryFallback
     failurePolicy: "passThrough"
     # -- HTTP status code on rate limit (4xx or 5xx)
@@ -667,19 +824,39 @@ edgequota:
     maxRecoveryAttempts: 0
     # -- Global RPS safety valve for passthrough mode (0 = disabled)
     globalPassthroughRps: 0
-    # -- Key extraction strategy
-    keyStrategy:
-      # -- Strategy type: clientIP, header, composite
-      type: "clientIP"
-      # -- Header name (required for header/composite)
-      headerName: ""
-      # -- Include path prefix in composite key
-      pathPrefix: false
-      # -- Trusted proxy CIDRs for X-Forwarded-For
-      trustedProxies: []
-      # -- X-Forwarded-For depth to use
-      trustedIPDepth: 0
-    # -- External rate-limit service configuration
+
+    # -- Static rate-limit bucket parameters.
+    # Used when external RL is DISABLED. Ignored when external RL is enabled.
+    static:
+      # -- Requests per period (0 = disabled / passthrough)
+      average: 0
+      # -- Burst capacity
+      burst: 1
+      # -- Time period for the rate limit
+      period: "1s"
+      # -- Key extraction strategy
+      keyStrategy:
+        # -- Strategy type: clientIP, header, composite, global
+        #    clientIP  -- rate limit by client IP (default)
+        #    header    -- rate limit by a request header (requires headerName)
+        #    composite -- header + first path segment (requires headerName)
+        #    global    -- fixed key, all requests share one bucket
+        type: "clientIP"
+        # -- Header name (required for header/composite)
+        headerName: ""
+        # -- Include path prefix in composite key
+        pathPrefix: false
+        # -- Fixed key for global strategy (defaults to "global" when empty)
+        globalKey: ""
+        # -- Trusted proxy CIDRs for X-Forwarded-For
+        trustedProxies: []
+        # -- X-Forwarded-For depth to use (0 = leftmost, N = Nth from right)
+        trustedIPDepth: 0
+
+    # -- External rate-limit service configuration.
+    # When enabled, EdgeQuota delegates quota resolution to an external service.
+    # Key extraction is skipped; the external service derives keys from
+    # headers, Host, and path.
     external:
       # -- Enable external rate-limit service
       enabled: false
@@ -687,8 +864,28 @@ edgequota:
       failurePolicy: "passthrough"
       # -- Request timeout
       timeout: "5s"
-      # -- Default cache TTL when response has no cache headers
-      cacheTTL: "1m"
+
+      # -- Fallback rate-limit parameters when the external RL service is
+      # unavailable. REQUIRED when external.enabled is true.
+      # Defines the safety-net limits applied during external service outages.
+      fallback:
+        # -- Fallback requests per period (REQUIRED, must be > 0)
+        average: 0
+        # -- Fallback burst capacity
+        burst: 1
+        # -- Fallback time period
+        period: "1s"
+        # -- Fallback key extraction strategy.
+        # Recommended: "global" for FE/static assets (no custom headers),
+        #              "header" or "clientIP" for backend APIs.
+        keyStrategy:
+          type: "global"
+          headerName: ""
+          pathPrefix: false
+          globalKey: "fallback"
+          trustedProxies: []
+          trustedIPDepth: 0
+
       http:
         # -- External RL HTTP URL
         url: ""
@@ -702,7 +899,8 @@ edgequota:
           caFile: ""
           # -- Override TLS server name
           serverName: ""
-      # -- Header filter for requests to external RL service
+      # -- Header filter for requests to external RL service.
+      # Controls which headers are SENT to the external service (security concern).
       headerFilter:
         # -- Allow only these headers (takes precedence over denyList)
         allowList: []

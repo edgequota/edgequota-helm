@@ -14,6 +14,7 @@
 replicaCount: 1
 
 edgequota:
+  # Replace with your backend service address.
   backend:
     url: "http://my-backend-service:8080"
 
@@ -23,15 +24,27 @@ edgequota:
     mode: "single"
 
   rateLimit:
-    average: 100
-    burst: 20
-    period: "1s"
+    static:
+      average: 100
+      burst: 20
+      period: "1s"
 
-  # -- Uncomment to enable a dedicated cache Redis instance
+  # -- Uncomment to enable CDN-style response caching
+  # cache:
+  #   enabled: true
+  #   maxBodySize: "1MB"
+
+  # -- Uncomment to enable a dedicated cache Redis for external RL responses
   # cacheRedis:
   #   enabled: true
   #   endpoints:
   #     - "cache-redis:6379"
+  #   mode: "single"
+
+  # -- Uncomment to enable a dedicated Redis for the response cache
+  # responseCacheRedis:
+  #   endpoints:
+  #     - "cdn-redis:6379"
   #   mode: "single"
 
   # -- Uncomment to enable external auth

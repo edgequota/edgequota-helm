@@ -4,7 +4,7 @@
 
 Helm chart for deploying [EdgeQuota](https://github.com/edgequota/edgequota) on Kubernetes.
 
-EdgeQuota is a distributed rate-limiting reverse proxy that sits at the edge of your cluster. It enforces Redis-backed token-bucket rate limits, supports external auth (HTTP/gRPC), and proxies HTTP/1.1, HTTP/2, HTTP/3, gRPC, SSE, and WebSocket traffic on a single port.
+EdgeQuota is a distributed rate-limiting reverse proxy and CDN-style response cache that sits at the edge of your cluster. It enforces Redis-backed token-bucket rate limits, supports external auth and rate-limit services (HTTP/gRPC), caches upstream responses honoring `Cache-Control` headers, and proxies HTTP/1.1, HTTP/2, HTTP/3, gRPC, SSE, and WebSocket traffic on a single port.
 
 ## Prerequisites
 
@@ -51,22 +51,22 @@ helm install edgequota . -f values-minimal.yaml
 ## Architecture
 
 ```
-                  ┌──────────────────────────────────────────┐
-                  │              EdgeQuota Pod                │
+                  ┌─────────────────────────────────────────────────────┐
+                  │                   EdgeQuota Pod                      │
 Internet ──▶ Ingress ──▶ :80/443 (proxy svc) ──▶ :8080 ──▶ Backend
-                  │                                          │
-                  │    :9090 (admin svc, ClusterIP only)     │
-                  │              │                            │
-                  │              ▼                            │
-                  │         Redis (external)                  │
-                  └──────────────────────────────────────────┘
+                  │                                                      │
+                  │    :9090 (admin svc, ClusterIP only)                 │
+                  │         │                                            │
+                  │         ▼                                            │
+                  │    Redis (rate limits, ext-RL cache, response cache) │
+                  └─────────────────────────────────────────────────────┘
 ```
 
 The chart creates two services:
 - **Proxy service** (`<release>-edgequota`) — port 80 (no TLS) or 443 (TLS), targeting container port 8080. Type is configurable (ClusterIP, NodePort, LoadBalancer).
-- **Admin service** (`<release>-edgequota-admin`) — always ClusterIP on port 9090. Serves health probes, readiness checks, and Prometheus metrics.
+- **Admin service** (`<release>-edgequota-admin`) — always ClusterIP on port 9090. Serves health probes, readiness checks, Prometheus metrics, and cache invalidation APIs.
 
-**Request flow:** Auth (optional) → Rate Limit → Reverse Proxy → Backend
+**Request flow:** Auth (optional) → Response Cache check → Rate Limit → Reverse Proxy → Backend → Response Cache store
 
 ## Example Values
 
@@ -132,7 +132,7 @@ These values are rendered into the ConfigMap that EdgeQuota reads as `config.yam
 
 | Parameter | Description | Default |
 |---|---|---|
-| `edgequota.backend.url` | Backend URL (required unless external rate limit mode) | `""` |
+| `edgequota.rateLimit.static.backendUrl` | Backend URL (required unless external rate limit mode) | `""` |
 | `edgequota.backend.timeout` | Request timeout | `30s` |
 | `edgequota.backend.maxIdleConns` | Max idle connections | `100` |
 | `edgequota.backend.idleConnTimeout` | Idle connection timeout | `90s` |
@@ -147,15 +147,93 @@ These values are rendered into the ConfigMap that EdgeQuota reads as `config.yam
 | `edgequota.redis.poolSize` | Connection pool size | `10` |
 | `edgequota.redis.tls.enabled` | Enable TLS for Redis | `false` |
 
-#### Rate Limiting
+#### CDN-style Response Cache
+
+When enabled, EdgeQuota caches upstream HTTP responses in Redis and serves them on subsequent requests — exactly like a CDN. Backends opt in by returning standard `Cache-Control` headers:
+
+```
+Cache-Control: public, max-age=300      # cache for 5 minutes
+Cache-Control: no-store                 # never cache this response
+Surrogate-Key: product-123 category-x  # tag-based invalidation
+```
+
+Only `GET` requests and `200`/`301` responses are cached. WebSocket, gRPC, SSE, and non-GET requests always bypass the cache.
 
 | Parameter | Description | Default |
 |---|---|---|
-| `edgequota.rateLimit.average` | Requests per period (0 = disabled) | `0` |
-| `edgequota.rateLimit.burst` | Burst capacity | `1` |
-| `edgequota.rateLimit.period` | Time period | `1s` |
-| `edgequota.rateLimit.failurePolicy` | `passThrough`, `failClosed`, `inMemoryFallback` | `passThrough` |
-| `edgequota.rateLimit.keyStrategy.type` | `clientIP`, `header`, `composite` | `clientIP` |
+| `edgequota.cache.enabled` | Enable CDN-style response cache | `false` |
+| `edgequota.cache.maxBodySize` | Max response body size to cache | `1MB` |
+| `edgequota.responseCacheRedis.endpoints` | Dedicated Redis for response cache (empty = share main Redis) | `[]` |
+| `edgequota.responseCacheRedis.mode` | Redis mode for response cache Redis | `single` |
+| `edgequota.responseCacheRedis.poolSize` | Connection pool size | `10` |
+
+**Redis fallback chain:** `responseCacheRedis` → `cacheRedis` → main `redis`.
+
+**Cache invalidation** is available via the admin API (port 9090):
+
+```bash
+# Purge a single URL
+curl -X POST http://admin:9090/v1/cache/purge \
+  -H 'Content-Type: application/json' \
+  -d '{"url":"/api/products","method":"GET"}'
+
+# Purge all entries tagged with a Surrogate-Key
+curl -X POST http://admin:9090/v1/cache/purge/tags \
+  -H 'Content-Type: application/json' \
+  -d '{"tags":["product-123","category-shoes"]}'
+```
+
+Returns `204 No Content` on success, `404` if the entry was not found.
+
+**Minimal example:**
+
+```yaml
+edgequota:
+  cache:
+    enabled: true
+    maxBodySize: "5MB"
+```
+
+**With a dedicated cache Redis:**
+
+```yaml
+edgequota:
+  cache:
+    enabled: true
+    maxBodySize: "10MB"
+  responseCacheRedis:
+    endpoints:
+      - "cdn-redis-primary:6379"
+      - "cdn-redis-replica:6379"
+    mode: "replication"
+    poolSize: 50
+```
+
+#### Rate Limiting
+
+EdgeQuota has two rate-limiting modes. **Static** (default): fixed token-bucket limits enforced locally. **External**: an external service provides per-request quotas; the `static` block is ignored and `external.fallback` is required as a safety net.
+
+| Parameter | Description | Default |
+|---|---|---|
+| `edgequota.rateLimit.failurePolicy` | Redis failure policy: `passThrough`, `failClosed`, `inMemoryFallback` | `passThrough` |
+| **Static** (used when external RL is disabled) | | |
+| `edgequota.rateLimit.static.average` | Requests per period (0 = disabled) | `0` |
+| `edgequota.rateLimit.static.burst` | Burst capacity | `1` |
+| `edgequota.rateLimit.static.period` | Time period | `1s` |
+| `edgequota.rateLimit.static.keyStrategy.type` | `clientIP`, `header`, `composite`, `global` | `clientIP` |
+| `edgequota.rateLimit.static.keyStrategy.headerName` | Header to extract key from (required for `header`/`composite`) | `""` |
+| `edgequota.rateLimit.static.keyStrategy.globalKey` | Fixed key for `global` strategy | `""` |
+| **External** (delegates quota to external service) | | |
+| `edgequota.rateLimit.external.enabled` | Enable external rate-limit service | `false` |
+| `edgequota.rateLimit.external.timeout` | Request timeout | `5s` |
+| `edgequota.rateLimit.external.http.url` | HTTP endpoint URL | `""` |
+| `edgequota.rateLimit.external.grpc.address` | gRPC endpoint address | `""` |
+| **External Fallback** (required when `external.enabled` is true) | | |
+| `edgequota.rateLimit.external.fallback.average` | Fallback requests per period (must be > 0) | `0` |
+| `edgequota.rateLimit.external.fallback.burst` | Fallback burst capacity | `1` |
+| `edgequota.rateLimit.external.fallback.period` | Fallback time period | `1s` |
+| `edgequota.rateLimit.external.fallback.keyStrategy.type` | Fallback key strategy: `clientIP`, `header`, `composite`, `global` | `global` |
+| `edgequota.rateLimit.external.fallback.keyStrategy.globalKey` | Fixed key for `global` fallback | `fallback` |
 
 #### Auth, Logging, Tracing
 
@@ -196,7 +274,25 @@ secrets:
   existingSecretMappings:
     - envVar: EDGEQUOTA_REDIS_PASSWORD
       key: redis-password
+    # Uncomment when using a dedicated cache Redis:
+    # - envVar: EDGEQUOTA_CACHE_REDIS_PASSWORD
+    #   key: cache-redis-password
+    # Uncomment when using a dedicated response cache Redis:
+    # - envVar: EDGEQUOTA_RESPONSE_CACHE_REDIS_PASSWORD
+    #   key: response-cache-redis-password
 ```
+
+Available secret environment variables:
+
+| Env Var | Secret key (chart-managed) | Purpose |
+|---|---|---|
+| `EDGEQUOTA_REDIS_PASSWORD` | `redis-password` | Main Redis |
+| `EDGEQUOTA_REDIS_USERNAME` | `redis-username` | Main Redis |
+| `EDGEQUOTA_REDIS_SENTINEL_PASSWORD` | `redis-sentinel-password` | Main Redis Sentinel |
+| `EDGEQUOTA_CACHE_REDIS_PASSWORD` | `cache-redis-password` | External RL cache Redis |
+| `EDGEQUOTA_CACHE_REDIS_SENTINEL_PASSWORD` | `cache-redis-sentinel-password` | External RL cache Redis Sentinel |
+| `EDGEQUOTA_RESPONSE_CACHE_REDIS_PASSWORD` | `response-cache-redis-password` | Response cache Redis |
+| `EDGEQUOTA_RESPONSE_CACHE_REDIS_SENTINEL_PASSWORD` | `response-cache-redis-sentinel-password` | Response cache Redis Sentinel |
 
 ### Ingress with cert-manager
 
@@ -289,16 +385,19 @@ metrics:
     interval: "15s"
 ```
 
-### Health Endpoints
+### Admin API Endpoints
 
 All served on the admin port (default `:9090`):
 
-| Endpoint | Probe | Description |
-|---|---|---|
-| `GET /startz` | Startup | 200 when init complete, 503 during startup |
-| `GET /healthz` | Liveness | Always 200 while process runs |
-| `GET /readyz` | Readiness | 200 when ready, 503 during startup/shutdown |
-| `GET /metrics` | Prometheus | Metrics in Prometheus text format |
+| Endpoint | Method | Probe/Purpose | Description |
+|---|---|---|---|
+| `/startz` | GET | Startup | `200` when init complete, `503` during startup |
+| `/healthz` | GET | Liveness | Always `200` while process runs |
+| `/readyz` | GET | Readiness | `200` when ready, `503` during startup/shutdown |
+| `/metrics` | GET | Prometheus | Metrics in Prometheus text format |
+| `/v1/config` | GET | Ops | Redacted runtime configuration dump |
+| `/v1/cache/purge` | POST | Cache ops | Purge a cached response by URL/method |
+| `/v1/cache/purge/tags` | POST | Cache ops | Purge cached responses by `Surrogate-Key` tags |
 
 ### Escape Hatches
 

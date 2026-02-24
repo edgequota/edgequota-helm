@@ -206,17 +206,52 @@ data:
       {{- end }}
     {{- end }}
 
+    {{- if .Values.edgequota.responseCacheRedis.endpoints }}
+    # --- Response Cache Redis (optional dedicated instance) ---
+    response_cache_redis:
+      endpoints:
+        {{- include "edgequota.endpointsList" .Values.edgequota.responseCacheRedis.endpoints | nindent 8 }}
+      {{- with .Values.edgequota.responseCacheRedis.mode }}
+      mode: {{ . | quote }}
+      {{- end }}
+      {{- with .Values.edgequota.responseCacheRedis.masterName }}
+      master_name: {{ . | quote }}
+      {{- end }}
+      {{- with .Values.edgequota.responseCacheRedis.db }}
+      db: {{ . }}
+      {{- end }}
+      {{- with .Values.edgequota.responseCacheRedis.poolSize }}
+      pool_size: {{ . }}
+      {{- end }}
+      {{- with .Values.edgequota.responseCacheRedis.dialTimeout }}
+      dial_timeout: {{ . | quote }}
+      {{- end }}
+      {{- with .Values.edgequota.responseCacheRedis.readTimeout }}
+      read_timeout: {{ . | quote }}
+      {{- end }}
+      {{- with .Values.edgequota.responseCacheRedis.writeTimeout }}
+      write_timeout: {{ . | quote }}
+      {{- end }}
+      {{- if .Values.edgequota.responseCacheRedis.tls.enabled }}
+      tls:
+        enabled: true
+        {{- if .Values.edgequota.responseCacheRedis.tls.insecureSkipVerify }}
+        insecure_skip_verify: true
+        {{- end }}
+      {{- end }}
+    {{- end }}
+
+    {{- if .Values.edgequota.cache.enabled }}
+    # --- Response Cache (CDN-style) ---
+    cache:
+      enabled: true
+      {{- with .Values.edgequota.cache.maxBodySize }}
+      max_body_size: {{ . | quote }}
+      {{- end }}
+    {{- end }}
+
     # --- Rate Limiting ---
     rate_limit:
-      {{- with .Values.edgequota.rateLimit.average }}
-      average: {{ . }}
-      {{- end }}
-      {{- with .Values.edgequota.rateLimit.burst }}
-      burst: {{ . }}
-      {{- end }}
-      {{- with .Values.edgequota.rateLimit.period }}
-      period: {{ . | quote }}
-      {{- end }}
       {{- with .Values.edgequota.rateLimit.failurePolicy }}
       failure_policy: {{ . | quote }}
       {{- end }}
@@ -238,23 +273,41 @@ data:
       {{- if .Values.edgequota.rateLimit.globalPassthroughRps }}
       global_passthrough_rps: {{ .Values.edgequota.rateLimit.globalPassthroughRps }}
       {{- end }}
-      {{- if .Values.edgequota.rateLimit.keyStrategy }}
-      key_strategy:
-        {{- with .Values.edgequota.rateLimit.keyStrategy.type }}
-        type: {{ . | quote }}
+      {{- if .Values.edgequota.rateLimit.static }}
+      static:
+        {{- with .Values.edgequota.rateLimit.static.backendUrl }}
+        backend_url: {{ . | quote }}
         {{- end }}
-        {{- with .Values.edgequota.rateLimit.keyStrategy.headerName }}
-        header_name: {{ . | quote }}
+        {{- with .Values.edgequota.rateLimit.static.average }}
+        average: {{ . }}
         {{- end }}
-        {{- if .Values.edgequota.rateLimit.keyStrategy.pathPrefix }}
-        path_prefix: true
+        {{- with .Values.edgequota.rateLimit.static.burst }}
+        burst: {{ . }}
         {{- end }}
-        {{- with .Values.edgequota.rateLimit.keyStrategy.trustedProxies }}
-        trusted_proxies:
-          {{- toYaml . | nindent 10 }}
+        {{- with .Values.edgequota.rateLimit.static.period }}
+        period: {{ . | quote }}
         {{- end }}
-        {{- with .Values.edgequota.rateLimit.keyStrategy.trustedIPDepth }}
-        trusted_ip_depth: {{ . }}
+        {{- if .Values.edgequota.rateLimit.static.keyStrategy }}
+        key_strategy:
+          {{- with .Values.edgequota.rateLimit.static.keyStrategy.type }}
+          type: {{ . | quote }}
+          {{- end }}
+          {{- with .Values.edgequota.rateLimit.static.keyStrategy.headerName }}
+          header_name: {{ . | quote }}
+          {{- end }}
+          {{- if .Values.edgequota.rateLimit.static.keyStrategy.pathPrefix }}
+          path_prefix: true
+          {{- end }}
+          {{- with .Values.edgequota.rateLimit.static.keyStrategy.globalKey }}
+          global_key: {{ . | quote }}
+          {{- end }}
+          {{- with .Values.edgequota.rateLimit.static.keyStrategy.trustedProxies }}
+          trusted_proxies:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.edgequota.rateLimit.static.keyStrategy.trustedIPDepth }}
+          trusted_ip_depth: {{ . }}
+          {{- end }}
         {{- end }}
       {{- end }}
       {{- if .Values.edgequota.rateLimit.external.enabled }}
@@ -266,8 +319,42 @@ data:
         {{- with .Values.edgequota.rateLimit.external.timeout }}
         timeout: {{ . | quote }}
         {{- end }}
-        {{- with .Values.edgequota.rateLimit.external.cacheTTL }}
-        cache_ttl: {{ . | quote }}
+        {{- if .Values.edgequota.rateLimit.external.fallback }}
+        fallback:
+          {{- with .Values.edgequota.rateLimit.external.fallback.backendUrl }}
+          backend_url: {{ . | quote }}
+          {{- end }}
+          {{- with .Values.edgequota.rateLimit.external.fallback.average }}
+          average: {{ . }}
+          {{- end }}
+          {{- with .Values.edgequota.rateLimit.external.fallback.burst }}
+          burst: {{ . }}
+          {{- end }}
+          {{- with .Values.edgequota.rateLimit.external.fallback.period }}
+          period: {{ . | quote }}
+          {{- end }}
+          {{- if .Values.edgequota.rateLimit.external.fallback.keyStrategy }}
+          key_strategy:
+            {{- with .Values.edgequota.rateLimit.external.fallback.keyStrategy.type }}
+            type: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.edgequota.rateLimit.external.fallback.keyStrategy.headerName }}
+            header_name: {{ . | quote }}
+            {{- end }}
+            {{- if .Values.edgequota.rateLimit.external.fallback.keyStrategy.pathPrefix }}
+            path_prefix: true
+            {{- end }}
+            {{- with .Values.edgequota.rateLimit.external.fallback.keyStrategy.globalKey }}
+            global_key: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.edgequota.rateLimit.external.fallback.keyStrategy.trustedProxies }}
+            trusted_proxies:
+              {{- toYaml . | nindent 14 }}
+            {{- end }}
+            {{- with .Values.edgequota.rateLimit.external.fallback.keyStrategy.trustedIPDepth }}
+            trusted_ip_depth: {{ . }}
+            {{- end }}
+          {{- end }}
         {{- end }}
         {{- if .Values.edgequota.rateLimit.external.http.url }}
         http:

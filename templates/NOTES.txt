@@ -18,12 +18,21 @@ To access EdgeQuota proxy, run:
 
 {{- end }}
 
-Admin/metrics endpoint ({{ include "edgequota.fullname" . }}-admin service, always ClusterIP):
+Admin endpoint ({{ include "edgequota.fullname" . }}-admin service, always ClusterIP):
   kubectl port-forward -n {{ .Release.Namespace }} svc/{{ include "edgequota.fullname" . }}-admin {{ include "edgequota.adminPort" . }}:{{ include "edgequota.adminPort" . }}
 
   Health:    http://localhost:{{ include "edgequota.adminPort" . }}/healthz
   Ready:     http://localhost:{{ include "edgequota.adminPort" . }}/readyz
   Metrics:   http://localhost:{{ include "edgequota.adminPort" . }}/metrics
+  Config:    http://localhost:{{ include "edgequota.adminPort" . }}/v1/config
+{{- if .Values.edgequota.cache.enabled }}
+
+Cache is enabled. Purge entries via the admin API:
+  Purge by URL:  POST http://localhost:{{ include "edgequota.adminPort" . }}/v1/cache/purge
+                 Body: {"url":"/path/to/resource","method":"GET"}
+  Purge by tag:  POST http://localhost:{{ include "edgequota.adminPort" . }}/v1/cache/purge/tags
+                 Body: {"tags":["surrogate-key-1","surrogate-key-2"]}
+{{- end }}
 
 {{- if .Values.autoscaling.enabled }}
 
