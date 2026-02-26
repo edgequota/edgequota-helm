@@ -803,11 +803,14 @@ edgequota:
   #           type: "header"
   #           headerName: "X-Tenant-Id"
   #
-  # NOTE: External RL response caching is driven by the Cache-Control header
-  # (or cache_max_age_seconds body field) returned by the external service.
-  # No default TTL is applied — the external service must explicitly opt in
-  # to caching. Ephemeral headers (tracing IDs, X-Request-Id, etc.) are
-  # automatically excluded from cache keys.
+  # NOTE: External RL and auth response caching share the same priority order:
+  #   1. HTTP Cache-Control: max-age=N  (highest priority)
+  #   2. HTTP Expires: <date>
+  #   3. Body field cache_max_age_seconds
+  #   4. Body field cache_no_store: true
+  # HTTP headers always win over body fields. No default TTL is applied —
+  # the external service must explicitly opt in to caching. Ephemeral headers
+  # (tracing IDs, X-Request-Id, etc.) are automatically excluded from cache keys.
   #
   rateLimit:
     # -- Failure policy: passThrough, failClosed, inMemoryFallback
@@ -946,11 +949,23 @@ edgequota:
         caFile: ""
         # -- Override TLS server name for auth gRPC
         serverName: ""
-    # -- Header filter for requests to auth service
+    # -- Header filter for requests to auth service.
+    # The auth service validates credentials, so EdgeQuota defaults to a minimal
+    # allow-list: only Authorization and X-Api-Key are forwarded when neither
+    # allowList nor denyList is configured.
+    #
+    # To forward additional headers, set allowList explicitly:
+    #   allowList: ["Authorization", "X-Api-Key", "X-Tenant-Id"]
+    #
+    # To switch to a deny-list (forward everything except listed headers):
+    #   denyList: ["Cookie", "Set-Cookie"]
+    #
+    # allowList takes precedence over denyList when both are set.
     headerFilter:
-      # -- Allow only these headers (takes precedence over denyList)
+      # -- Allow only these headers (takes precedence over denyList).
+      # Empty = use DefaultAuthAllowHeaders (Authorization, X-Api-Key).
       allowList: []
-      # -- Deny these headers
+      # -- Deny these headers. Only applied when allowList is empty.
       denyList: []
     # -- Headers the auth service is allowed to inject into the proxied request.
     # Only these header names (case-insensitive) will be forwarded from the
