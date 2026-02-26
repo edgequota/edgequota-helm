@@ -950,22 +950,26 @@ edgequota:
         # -- Override TLS server name for auth gRPC
         serverName: ""
     # -- Header filter for requests to auth service.
-    # The auth service validates credentials, so EdgeQuota defaults to a minimal
-    # allow-list: only Authorization and X-Api-Key are forwarded when neither
-    # allowList nor denyList is configured.
+    # Default (both lists empty): DefaultAuthDenyHeaders deny-list applies —
+    # Cookie, Set-Cookie, Proxy-Authorization, Proxy-Authenticate, X-Csrf-Token,
+    # and X-Xsrf-Token are stripped; everything else (Authorization, X-Api-Key,
+    # X-Tenant-Id, Content-Type, custom headers...) is forwarded.
+    # This differs from the external RL default which also strips Authorization
+    # and X-Api-Key — the auth service needs those to validate credentials.
     #
-    # To forward additional headers, set allowList explicitly:
-    #   allowList: ["Authorization", "X-Api-Key", "X-Tenant-Id"]
+    # To restrict to an explicit allow-list:
+    #   allowList: ["Authorization", "X-Tenant-Id"]
     #
-    # To switch to a deny-list (forward everything except listed headers):
-    #   denyList: ["Cookie", "Set-Cookie"]
+    # To replace the deny-list:
+    #   denyList: ["Cookie", "Set-Cookie", "X-Internal-Secret"]
     #
     # allowList takes precedence over denyList when both are set.
     headerFilter:
       # -- Allow only these headers (takes precedence over denyList).
-      # Empty = use DefaultAuthAllowHeaders (Authorization, X-Api-Key).
+      # Empty = use DefaultAuthDenyHeaders (see above).
       allowList: []
       # -- Deny these headers. Only applied when allowList is empty.
+      # Empty = use DefaultAuthDenyHeaders (see above).
       denyList: []
     # -- Headers the auth service is allowed to inject into the proxied request.
     # Only these header names (case-insensitive) will be forwarded from the
