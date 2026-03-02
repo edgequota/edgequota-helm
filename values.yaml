@@ -488,64 +488,34 @@ extraVolumes: []
 #   edgequota.backend.transport.h3UdpReceiveBufferSize: 7500000
 #   edgequota.backend.transport.h3UdpSendBufferSize: 7500000
 # ============================================================================
-initContainers: []
-# -- Sidecar containers
-sidecars: []
-
 # =============================================================================
-# Node UDP buffer tuning DaemonSet
+# UDP socket buffer tuning init container
 # =============================================================================
-# When HTTP/3 (QUIC) is enabled, quic-go requires net.core.rmem_max and
-# net.core.wmem_max to be at least 7168 KiB (~7 MB) on the node. Containers
-# running under PodSecurity "restricted" cannot raise these limits themselves
-# (privileged containers and unsafe sysctls are both blocked).
+# When enabled, adds an init container to the EdgeQuota pod that sets
+# net.core.rmem_max and net.core.wmem_max inside the pod's own network
+# namespace before EdgeQuota starts. This is required for quic-go to allocate
+# the 7 MiB UDP receive buffer it needs for reliable HTTP/3 (QUIC) inbound.
 #
-# Setting nodeUdpTuning.enabled=true deploys a lightweight DaemonSet into
-# nodeUdpTuning.namespace (default: kube-system, which is exempt from
-# PodSecurity enforcement). The DaemonSet runs a single privileged container
-# that sets the sysctls once at startup, then sleeps. The change persists for
-# the lifetime of the node — no pod-level privilege escalation is required.
+# The init container uses CAP_NET_ADMIN (no privileged: true) and runs as
+# root only for the duration of the sysctl call.
 #
-# Use nodeSelector and tolerations to restrict the DaemonSet to only the nodes
-# that schedule EdgeQuota pods. This avoids tuning unrelated nodes.
-#
-# Example for DigitalOcean edge-pool nodes:
-#   nodeUdpTuning:
-#     enabled: true
-#     nodeSelector:
-#       doks.digitalocean.com/node-pool: edge-pool
-#     tolerations:
-#       - key: edge
-#         operator: Equal
-#         value: enabled
-#         effect: NoSchedule
-nodeUdpTuning:
-  # -- Deploy the node-level UDP buffer tuning DaemonSet
+# IMPORTANT: The namespace hosting EdgeQuota must have PodSecurity >= baseline.
+# PodSecurity "restricted" drops all capabilities and will reject this pod.
+udpBufferTuning:
+  # -- Enable the UDP buffer tuning init container
   enabled: false
-  # -- Namespace for the DaemonSet. Must allow privileged containers (kube-system
-  # is exempt from PodSecurity enforcement on most managed Kubernetes services).
-  namespace: kube-system
-  # -- Node selector for the tuning DaemonSet. When null or empty, inherits the
-  # top-level nodeSelector (same nodes as the EdgeQuota deployment). Set
-  # explicitly to target a different set of nodes.
-  nodeSelector: null
-  # -- Tolerations for the tuning DaemonSet. When null or empty, inherits the
-  # top-level tolerations (same as the EdgeQuota deployment). Set explicitly to
-  # override.
-  tolerations: null
-  # -- UDP receive and send buffer size in bytes set on net.core.rmem_max and
-  # net.core.wmem_max. quic-go requires at least 7340032 (~7 MiB).
+  # -- Buffer size in bytes for net.core.rmem_max and net.core.wmem_max.
+  # quic-go requires at least 7340032 (~7 MiB).
   bufferSize: "7500000"
   image:
     repository: busybox
     tag: "1.37"
     pullPolicy: IfNotPresent
-  resources:
-    requests:
-      cpu: 1m
-      memory: 4Mi
-    limits:
-      memory: 16Mi
+
+# -- Extra init containers (appended after udpBufferTuning if both are enabled)
+initContainers: []
+# -- Sidecar containers
+sidecars: []
 
 # =============================================================================
 # EdgeQuota Application Configuration

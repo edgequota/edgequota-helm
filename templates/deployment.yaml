@@ -59,9 +59,27 @@ spec:
         {{- end }}
       {{- end }}
       terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds | default 60 }}
-      {{- with .Values.initContainers }}
+      {{- if or .Values.udpBufferTuning.enabled .Values.initContainers }}
       initContainers:
+        {{- if .Values.udpBufferTuning.enabled }}
+        - name: sysctl-udp-buffers
+          image: {{ .Values.udpBufferTuning.image.repository }}:{{ .Values.udpBufferTuning.image.tag }}
+          imagePullPolicy: {{ .Values.udpBufferTuning.image.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - sysctl -w net.core.rmem_max={{ .Values.udpBufferTuning.bufferSize }} net.core.wmem_max={{ .Values.udpBufferTuning.bufferSize }}
+          securityContext:
+            runAsUser: 0
+            runAsNonRoot: false
+            allowPrivilegeEscalation: false
+            capabilities:
+              add: ["NET_ADMIN"]
+              drop: ["ALL"]
+        {{- end }}
+        {{- with .Values.initContainers }}
         {{- toYaml . | nindent 8 }}
+        {{- end }}
       {{- end }}
       containers:
         - name: edgequota
