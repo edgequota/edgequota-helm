@@ -493,6 +493,61 @@ initContainers: []
 sidecars: []
 
 # =============================================================================
+# Node UDP buffer tuning DaemonSet
+# =============================================================================
+# When HTTP/3 (QUIC) is enabled, quic-go requires net.core.rmem_max and
+# net.core.wmem_max to be at least 7168 KiB (~7 MB) on the node. Containers
+# running under PodSecurity "restricted" cannot raise these limits themselves
+# (privileged containers and unsafe sysctls are both blocked).
+#
+# Setting nodeUdpTuning.enabled=true deploys a lightweight DaemonSet into
+# nodeUdpTuning.namespace (default: kube-system, which is exempt from
+# PodSecurity enforcement). The DaemonSet runs a single privileged container
+# that sets the sysctls once at startup, then sleeps. The change persists for
+# the lifetime of the node — no pod-level privilege escalation is required.
+#
+# Use nodeSelector and tolerations to restrict the DaemonSet to only the nodes
+# that schedule EdgeQuota pods. This avoids tuning unrelated nodes.
+#
+# Example for DigitalOcean edge-pool nodes:
+#   nodeUdpTuning:
+#     enabled: true
+#     nodeSelector:
+#       doks.digitalocean.com/node-pool: edge-pool
+#     tolerations:
+#       - key: edge
+#         operator: Equal
+#         value: enabled
+#         effect: NoSchedule
+nodeUdpTuning:
+  # -- Deploy the node-level UDP buffer tuning DaemonSet
+  enabled: false
+  # -- Namespace for the DaemonSet. Must allow privileged containers (kube-system
+  # is exempt from PodSecurity enforcement on most managed Kubernetes services).
+  namespace: kube-system
+  # -- Node selector for the tuning DaemonSet. When null or empty, inherits the
+  # top-level nodeSelector (same nodes as the EdgeQuota deployment). Set
+  # explicitly to target a different set of nodes.
+  nodeSelector: null
+  # -- Tolerations for the tuning DaemonSet. When null or empty, inherits the
+  # top-level tolerations (same as the EdgeQuota deployment). Set explicitly to
+  # override.
+  tolerations: null
+  # -- UDP receive and send buffer size in bytes set on net.core.rmem_max and
+  # net.core.wmem_max. quic-go requires at least 7340032 (~7 MiB).
+  bufferSize: "7500000"
+  image:
+    repository: busybox
+    tag: "1.37"
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 1m
+      memory: 4Mi
+    limits:
+      memory: 16Mi
+
+# =============================================================================
 # EdgeQuota Application Configuration
 # =============================================================================
 # These values are rendered into the ConfigMap as config.yaml.
