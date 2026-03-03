@@ -1068,6 +1068,11 @@ edgequota:
     serviceName: "edgequota"
     # -- Sampling rate (0.0 to 1.0)
     sampleRate: 0.1
+    # -- Instrumentation depth. Controls which operations generate spans:
+    # --   basic    - one root span per request (edgequota.request)
+    # --   external - root span + child spans for auth and external RL calls (default)
+    # --   full     - external + child spans for every Redis operation
+    level: ""
 
   # -- Extra config entries appended to the ConfigMap data section
   extraConfig: {}

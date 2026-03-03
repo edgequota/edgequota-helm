@@ -549,6 +549,9 @@ data:
       {{- with .Values.edgequota.tracing.sampleRate }}
       sample_rate: {{ . }}
       {{- end }}
+      {{- with .Values.edgequota.tracing.level }}
+      level: {{ . | quote }}
+      {{- end }}
     {{- end }}
 
   {{- with .Values.edgequota.extraConfig }}
