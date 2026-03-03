@@ -2,8 +2,33 @@ apiVersion: v1
 entries:
   edgequota:
   - apiVersion: v2
+    appVersion: 0.4.6
+    created: "2026-03-03T21:52:11.613004266Z"
+    description: A Helm chart for EdgeQuota - distributed rate-limiting reverse proxy
+      for Kubernetes
+    digest: 5a517da2898af218548e488e9494fe147ea31295240a28d4fc2fc7ad4a62f821
+    home: https://github.com/edgequota/edgequota
+    keywords:
+    - rate-limiting
+    - reverse-proxy
+    - edge
+    - redis
+    - grpc
+    - http3
+    maintainers:
+    - name: edgequota
+      url: https://github.com/edgequota
+    name: edgequota
+    sources:
+    - https://github.com/edgequota/edgequota
+    - https://github.com/edgequota/edgequota-helm
+    type: application
+    urls:
+    - https://edgequota.github.io/edgequota-helm/edgequota-0.4.8.tgz
+    version: 0.4.8
+  - apiVersion: v2
     appVersion: 0.4.5
-    created: "2026-03-03T19:53:28.171976095Z"
+    created: "2026-03-03T21:52:11.610477203Z"
     description: A Helm chart for EdgeQuota - distributed rate-limiting reverse proxy
       for Kubernetes
     digest: aea8e5898db8742f451b864aa58089e830f65a0da8855fa1b6ff30cca6795c9a
@@ -28,7 +53,7 @@ entries:
     version: 0.4.7
   - apiVersion: v2
     appVersion: 0.4.3
-    created: "2026-03-03T19:53:28.168689032Z"
+    created: "2026-03-03T21:52:11.608786508Z"
     description: A Helm chart for EdgeQuota - distributed rate-limiting reverse proxy
       for Kubernetes
     digest: 8ed9a5997eaa1a190aa1871a8d764788421f0c584f70555ac20e71d9080e50c7
@@ -53,7 +78,7 @@ entries:
     version: 0.4.6
   - apiVersion: v2
     appVersion: 0.4.3
-    created: "2026-03-03T19:53:28.166982233Z"
+    created: "2026-03-03T21:52:11.607151814Z"
     description: A Helm chart for EdgeQuota - distributed rate-limiting reverse proxy
       for Kubernetes
     digest: 68bb34a74fd153b30fcdf3d291064ff535ab3f1c9504dd12a073389dbb74f5d8
@@ -78,7 +103,7 @@ entries:
     version: 0.4.5
   - apiVersion: v2
     appVersion: 0.4.3
-    created: "2026-03-03T19:53:28.165304128Z"
+    created: "2026-03-03T21:52:11.605451717Z"
     description: A Helm chart for EdgeQuota - distributed rate-limiting reverse proxy
       for Kubernetes
     digest: 04972e6a886c01b40853d948009dc328a39e811dd7af8e29930cb79aa25acee5
@@ -103,7 +128,7 @@ entries:
     version: 0.4.4
   - apiVersion: v2
     appVersion: 0.4.3
-    created: "2026-03-03T19:53:28.16354442Z"
+    created: "2026-03-03T21:52:11.602685263Z"
     description: A Helm chart for EdgeQuota - distributed rate-limiting reverse proxy
       for Kubernetes
     digest: 69835ec05564029f93f0b262916ee8c8f455065f6bd686c601adb1c5141b0831
@@ -128,7 +153,7 @@ entries:
     version: 0.4.3
   - apiVersion: v2
     appVersion: 0.4.2
-    created: "2026-03-03T19:53:28.161639752Z"
+    created: "2026-03-03T21:52:11.601053203Z"
     description: A Helm chart for EdgeQuota - distributed rate-limiting reverse proxy
       for Kubernetes
     digest: d387196ee797d5bcb5995534ad72270d8098f5f595e8cc76d8dd13526dc3b726
@@ -153,7 +178,7 @@ entries:
     version: 0.4.2
   - apiVersion: v2
     appVersion: 0.4.1
-    created: "2026-03-03T19:53:28.158960971Z"
+    created: "2026-03-03T21:52:11.599430349Z"
     description: A Helm chart for EdgeQuota - distributed rate-limiting reverse proxy
       for Kubernetes
     digest: 521385988738c4c4f88e75b9bcd7a65e727a918e38ba13fe7afcbd98968fd962
@@ -178,7 +203,7 @@ entries:
     version: 0.4.1
   - apiVersion: v2
     appVersion: 0.4.0
-    created: "2026-03-03T19:53:28.15732293Z"
+    created: "2026-03-03T21:52:11.59777324Z"
     description: A Helm chart for EdgeQuota - distributed rate-limiting reverse proxy
       for Kubernetes
     digest: 08054f295f36bc322d1bcce0dec6a37cf0fdf872bd77482577dc793df744a6cd
@@ -203,7 +228,7 @@ entries:
     version: 0.4.0
   - apiVersion: v2
     appVersion: 0.3.2
-    created: "2026-03-03T19:53:28.155692333Z"
+    created: "2026-03-03T21:52:11.59527244Z"
     description: A Helm chart for EdgeQuota - distributed rate-limiting reverse proxy
       for Kubernetes
     digest: 77fcbd361ef57c0ae7938153b1fd702df17956c90f7bb31bd5778f54a402b6f6
@@ -228,7 +253,7 @@ entries:
     version: 0.3.2
   - apiVersion: v2
     appVersion: 0.3.1
-    created: "2026-03-03T19:53:28.154023154Z"
+    created: "2026-03-03T21:52:11.593690547Z"
     description: A Helm chart for EdgeQuota - distributed rate-limiting reverse proxy
       for Kubernetes
     digest: db6f6058b4d49b831aa578c53169c2c354f1fd54627ede235659d8602bebae36
@@ -253,7 +278,7 @@ entries:
     version: 0.3.1
   - apiVersion: v2
     appVersion: 0.3.0
-    created: "2026-03-03T19:53:28.151532389Z"
+    created: "2026-03-03T21:52:11.591977976Z"
     description: A Helm chart for EdgeQuota - distributed rate-limiting reverse proxy
       for Kubernetes
     digest: 45f86ad72534d76659d9e893fa9d9d96c23f2af920c4446471aa86c2a07ec082
@@ -278,7 +303,7 @@ entries:
     version: 0.3.0
   - apiVersion: v2
     appVersion: 0.2.0
-    created: "2026-03-03T19:53:28.149915638Z"
+    created: "2026-03-03T21:52:11.590303557Z"
     description: A Helm chart for EdgeQuota - distributed rate-limiting reverse proxy
       for Kubernetes
     digest: 727d8f0b7427b03679444ea34c8a431486abff511bd5a7cb841788da4cba11a0
@@ -303,7 +328,7 @@ entries:
     version: 0.2.0
   - apiVersion: v2
     appVersion: 0.1.13
-    created: "2026-03-03T19:53:28.139306275Z"
+    created: "2026-03-03T21:52:11.577794852Z"
     description: A Helm chart for EdgeQuota - distributed rate-limiting reverse proxy
       for Kubernetes
     digest: d72eb55f279feceaef88cb038977915bcdc67c27079a946da5d3cd7b2f5b14dc
@@ -328,7 +353,7 @@ entries:
     version: 0.1.15
   - apiVersion: v2
     appVersion: 0.1.12
-    created: "2026-03-03T19:53:28.137721763Z"
+    created: "2026-03-03T21:52:11.576370628Z"
     description: A Helm chart for EdgeQuota - distributed rate-limiting reverse proxy
       for Kubernetes
     digest: 148ea47a52c690842c0bff6d18aae0f6b2771f85c8fbc4e166b6f3f91d41b96a
@@ -353,7 +378,7 @@ entries:
     version: 0.1.14
   - apiVersion: v2
     appVersion: 0.1.10
-    created: "2026-03-03T19:53:28.135328737Z"
+    created: "2026-03-03T21:52:11.574916641Z"
     description: A Helm chart for EdgeQuota - distributed rate-limiting reverse proxy
       for Kubernetes
     digest: f09e84cea7516a597b2fd11711467db5d5fffdf23ab39b2f295b2899b6f82402
@@ -378,7 +403,7 @@ entries:
     version: 0.1.13
   - apiVersion: v2
     appVersion: 0.1.9
-    created: "2026-03-03T19:53:28.133860692Z"
+    created: "2026-03-03T21:52:11.573554775Z"
     description: A Helm chart for EdgeQuota - distributed rate-limiting reverse proxy
       for Kubernetes
     digest: 41822572770d6ab327041a398d80d4863b550a94e8b968f6b443c5becd36f530
@@ -403,7 +428,7 @@ entries:
     version: 0.1.12
   - apiVersion: v2
     appVersion: 0.1.8
-    created: "2026-03-03T19:53:28.132492174Z"
+    created: "2026-03-03T21:52:11.571983717Z"
     description: A Helm chart for EdgeQuota - distributed rate-limiting reverse proxy
       for Kubernetes
     digest: e3d2ce5063d85f5af4dbcc1731dedb702ddf1e30c75889e2365ba4b32cccb6be
@@ -428,7 +453,7 @@ entries:
     version: 0.1.11
   - apiVersion: v2
     appVersion: 0.1.7
-    created: "2026-03-03T19:53:28.131143642Z"
+    created: "2026-03-03T21:52:11.569870472Z"
     description: A Helm chart for EdgeQuota - distributed rate-limiting reverse proxy
       for Kubernetes
     digest: dbfe6218b7906f80fad8fab0078ceefba4b200ff1512f89b0d7d954a243e0dbd
@@ -453,7 +478,7 @@ entries:
     version: 0.1.10
   - apiVersion: v2
     appVersion: 0.1.5
-    created: "2026-03-03T19:53:28.148466339Z"
+    created: "2026-03-03T21:52:11.587963708Z"
     description: A Helm chart for EdgeQuota - distributed rate-limiting reverse proxy
       for Kubernetes
     digest: 7d2e133930fc5760b835db8bb7ddd2a186462527cc7f2422deff27ba083fec83
@@ -478,7 +503,7 @@ entries:
     version: 0.1.9
   - apiVersion: v2
     appVersion: 0.1.4
-    created: "2026-03-03T19:53:28.147159204Z"
+    created: "2026-03-03T21:52:11.586711294Z"
     description: A Helm chart for EdgeQuota - distributed rate-limiting reverse proxy
       for Kubernetes
     digest: 0a74e8273d44501ef6e31aa1f45565f6addf9c4af34fc7caa4612626feb97443
@@ -503,7 +528,7 @@ entries:
     version: 0.1.8
   - apiVersion: v2
     appVersion: 0.1.4
-    created: "2026-03-03T19:53:28.145816643Z"
+    created: "2026-03-03T21:52:11.585439644Z"
     description: A Helm chart for EdgeQuota - distributed rate-limiting reverse proxy
       for Kubernetes
     digest: e9a91e410f02b784c044d10c14819afacdf9e440f19650c9cf4b8d51e422dbde
@@ -528,7 +553,7 @@ entries:
     version: 0.1.7
   - apiVersion: v2
     appVersion: 0.1.4
-    created: "2026-03-03T19:53:28.143756844Z"
+    created: "2026-03-03T21:52:11.584356327Z"
     description: A Helm chart for EdgeQuota - distributed rate-limiting reverse proxy
       for Kubernetes
     digest: 8b5bc4d69654db7cac6f1ec5b91cb107e587a8128e92c8e758b3f1ea34fcb84a
@@ -553,7 +578,7 @@ entries:
     version: 0.1.6
   - apiVersion: v2
     appVersion: 0.1.3
-    created: "2026-03-03T19:53:28.142630256Z"
+    created: "2026-03-03T21:52:11.583200802Z"
     description: A Helm chart for EdgeQuota - distributed rate-limiting reverse proxy
       for Kubernetes
     digest: 757d3905d6d4d050483275f8bfa9462c3a41a6ecdf977c9aeeda8aae1ddcebdc
@@ -578,7 +603,7 @@ entries:
     version: 0.1.5
   - apiVersion: v2
     appVersion: 0.1.3
-    created: "2026-03-03T19:53:28.141480004Z"
+    created: "2026-03-03T21:52:11.581982921Z"
     description: A Helm chart for EdgeQuota - distributed rate-limiting reverse proxy
       for Kubernetes
     digest: e9cb63d63190daa07b0d97bf15d8e2985a6d66885a54dab83b610794d1a251dd
@@ -603,7 +628,7 @@ entries:
     version: 0.1.3
   - apiVersion: v2
     appVersion: 0.1.2
-    created: "2026-03-03T19:53:28.140401765Z"
+    created: "2026-03-03T21:52:11.579602501Z"
     description: A Helm chart for EdgeQuota - distributed rate-limiting reverse proxy
       for Kubernetes
     digest: b2d8ddb31416408a243321b3dbc52b5b087791872d90c5c1c221b3695bb1927d
@@ -628,7 +653,7 @@ entries:
     version: 0.1.2
   - apiVersion: v2
     appVersion: 0.1.0
-    created: "2026-03-03T19:53:28.129748613Z"
+    created: "2026-03-03T21:52:11.568586698Z"
     description: A Helm chart for EdgeQuota - distributed rate-limiting reverse proxy
       for Kubernetes
     digest: 62eb46479081a66ffcd80b455fe217da01b7014c438951bb67f4f3f0ecf42dd0
@@ -653,7 +678,7 @@ entries:
     version: 0.1.1
   - apiVersion: v2
     appVersion: 0.1.0
-    created: "2026-03-03T19:53:28.12782913Z"
+    created: "2026-03-03T21:52:11.567509921Z"
     description: A Helm chart for EdgeQuota - distributed rate-limiting reverse proxy
       for Kubernetes
     digest: 96acbd3fe1dafac3dbd8080e9773f50ff1f711c42a19c019770272d76fd015c9
@@ -678,7 +703,7 @@ entries:
     version: 0.1.0
   - apiVersion: v2
     appVersion: 0.0.3
-    created: "2026-03-03T19:53:28.12661546Z"
+    created: "2026-03-03T21:52:11.566420047Z"
     description: A Helm chart for EdgeQuota - distributed rate-limiting reverse proxy
       for Kubernetes
     digest: 2c88870e0fe8225585388351012870a6ab83c7bfbcdf62b570f6fc027b00418a
@@ -701,4 +726,4 @@ entries:
     urls:
     - https://edgequota.github.io/edgequota-helm/edgequota-0.0.3.tgz
     version: 0.0.3
-generated: "2026-03-03T19:53:28.1252788Z"
+generated: "2026-03-03T21:52:11.565190737Z"
