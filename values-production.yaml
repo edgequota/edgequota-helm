@@ -458,6 +458,8 @@ edgequota:
 
   tracing:
     enabled: true
-    endpoint: "http://otel-collector.observability:4318"
+    protocol: "grpc"
+    endpoint: "otel-collector.observability:4317"
+    insecure: true
     serviceName: "edgequota"
     sampleRate: 0.05

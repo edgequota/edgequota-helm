@@ -1062,8 +1062,15 @@ edgequota:
   tracing:
     # -- Enable OpenTelemetry tracing
     enabled: false
+    # -- OTLP transport protocol: "grpc" (default) or "http"
+    # --   grpc: endpoint is a bare host:port (e.g. "collector:4317")
+    # --   http:  endpoint is a full URL (e.g. "http://collector:4318")
+    protocol: "grpc"
     # -- OTLP endpoint
     endpoint: ""
+    # -- Use plaintext (no TLS). For grpc this disables mTLS; for http it
+    # -- allows http:// URLs without certificate verification.
+    insecure: true
     # -- Service name for traces
     serviceName: "edgequota"
     # -- Sampling rate (0.0 to 1.0)

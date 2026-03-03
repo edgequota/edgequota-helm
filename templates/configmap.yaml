@@ -540,8 +540,14 @@ data:
     {{- if .Values.edgequota.tracing.enabled }}
     tracing:
       enabled: true
+      {{- with .Values.edgequota.tracing.protocol }}
+      protocol: {{ . | quote }}
+      {{- end }}
       {{- with .Values.edgequota.tracing.endpoint }}
       endpoint: {{ . | quote }}
+      {{- end }}
+      {{- if not (kindIs "invalid" .Values.edgequota.tracing.insecure) }}
+      insecure: {{ .Values.edgequota.tracing.insecure }}
       {{- end }}
       {{- with .Values.edgequota.tracing.serviceName }}
       service_name: {{ . | quote }}
