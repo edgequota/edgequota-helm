@@ -563,6 +563,21 @@ edgequota:
       # a Service or load balancer. 0 = use the container's listen port.
       http3AdvertisePort: 0
 
+      # ── Mutual TLS (mTLS) — Client Certificate Authentication ──────
+      # Starts a SECOND TLS listener that requires client certificates.
+      # Requires server.tls.enabled=true.
+      mtls:
+        # -- Enable inbound mTLS listener
+        enabled: false
+        # -- mTLS listener port (must differ from server.port)
+        port: 4443
+        # -- Client CA PEM file path (mounted from a secret/configmap)
+        clientCAFile: ""
+        # -- Client auth mode: request | require_any | require_and_verify
+        clientAuth: "require_and_verify"
+        # -- Existing secret containing the client CA bundle (key: ca.crt)
+        existingCASecret: ""
+
   # --- Admin server ---
   admin:
     # -- Admin listen port

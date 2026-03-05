@@ -55,6 +55,15 @@ data:
         http3_advertise_port: {{ .Values.edgequota.server.tls.http3AdvertisePort }}
         {{- end }}
         {{- end }}
+        {{- if .Values.edgequota.server.tls.mtls.enabled }}
+        mtls:
+          enabled: true
+          listen_addr: ":{{ include "edgequota.mtlsPort" . }}"
+          client_ca_file: "{{ include "edgequota.mtlsCAPath" . }}/ca.crt"
+          {{- with .Values.edgequota.server.tls.mtls.clientAuth }}
+          client_auth: {{ . | quote }}
+          {{- end }}
+        {{- end }}
       {{- end }}
 
     # --- Admin ---

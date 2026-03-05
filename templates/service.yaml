@@ -40,6 +40,12 @@ spec:
       {{- if and (eq .Values.service.type "NodePort") .Values.service.nodePort }}
       nodePort: {{ .Values.service.nodePort }}
       {{- end }}
+    {{- if and .Values.edgequota.server.tls.enabled .Values.edgequota.server.tls.mtls.enabled }}
+    - name: https-mtls
+      port: {{ include "edgequota.mtlsPort" . }}
+      targetPort: proxy-mtls
+      protocol: TCP
+    {{- end }}
     {{- if and .Values.edgequota.server.tls.enabled .Values.edgequota.server.tls.http3Enabled }}
     - name: https-udp
       port: 443

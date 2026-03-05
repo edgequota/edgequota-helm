@@ -18,6 +18,10 @@ spec:
     - ports:
         - port: {{ include "edgequota.proxyPort" . }}
           protocol: TCP
+        {{- if and .Values.edgequota.server.tls.enabled .Values.edgequota.server.tls.mtls.enabled }}
+        - port: {{ include "edgequota.mtlsPort" . }}
+          protocol: TCP
+        {{- end }}
         {{- if and .Values.edgequota.server.tls.enabled .Values.edgequota.server.tls.http3Enabled }}
         - port: {{ include "edgequota.proxyPort" . }}
           protocol: UDP

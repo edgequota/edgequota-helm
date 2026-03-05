@@ -92,6 +92,20 @@ TLS cert mount path
 {{- end }}
 
 {{/*
+mTLS client CA mount path
+*/}}
+{{- define "edgequota.mtlsCAPath" -}}
+/etc/edgequota/mtls
+{{- end }}
+
+{{/*
+Return the mTLS container port
+*/}}
+{{- define "edgequota.mtlsPort" -}}
+{{- .Values.edgequota.server.tls.mtls.port | default 4443 }}
+{{- end }}
+
+{{/*
 Return the admin container port
 */}}
 {{- define "edgequota.adminPort" -}}

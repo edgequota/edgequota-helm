@@ -99,6 +99,11 @@ spec:
             - name: proxy
               containerPort: {{ include "edgequota.proxyPort" . }}
               protocol: TCP
+            {{- if and .Values.edgequota.server.tls.enabled .Values.edgequota.server.tls.mtls.enabled }}
+            - name: proxy-mtls
+              containerPort: {{ include "edgequota.mtlsPort" . }}
+              protocol: TCP
+            {{- end }}
             {{- if and .Values.edgequota.server.tls.enabled .Values.edgequota.server.tls.http3Enabled }}
             - name: proxy-udp
               containerPort: {{ include "edgequota.proxyPort" . }}
@@ -253,6 +258,11 @@ spec:
               mountPath: {{ include "edgequota.tlsPath" . }}
               readOnly: true
             {{- end }}
+            {{- if and .Values.edgequota.server.tls.enabled .Values.edgequota.server.tls.mtls.enabled }}
+            - name: mtls-ca
+              mountPath: {{ include "edgequota.mtlsCAPath" . }}
+              readOnly: true
+            {{- end }}
             {{- with .Values.extraVolumeMounts }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
@@ -267,6 +277,12 @@ spec:
         - name: tls
           secret:
             secretName: {{ .Values.edgequota.server.tls.existingSecret | default (printf "%s-tls" (include "edgequota.fullname" .)) }}
+            defaultMode: 0440
+        {{- end }}
+        {{- if and .Values.edgequota.server.tls.enabled .Values.edgequota.server.tls.mtls.enabled }}
+        - name: mtls-ca
+          secret:
+            secretName: {{ .Values.edgequota.server.tls.mtls.existingCASecret | default (printf "%s-mtls-ca" (include "edgequota.fullname" .)) }}
             defaultMode: 0440
         {{- end }}
         {{- with .Values.extraVolumes }}
