@@ -31,9 +31,9 @@ spec:
       annotations:
         {{- include "edgequota.checksumAnnotations" . | nindent 8 }}
         {{- if .Values.metrics.enabled }}
-        prometheus.io/scrape: "true"
-        prometheus.io/port: {{ include "edgequota.adminPort" . | quote }}
-        prometheus.io/path: "/metrics"
+        k8s.grafana.com/scrape: "true"
+        k8s.grafana.com/metrics.portNumber: {{ include "edgequota.adminPort" . | quote }}
+        k8s.grafana.com/metrics.path: "/metrics"
         {{- end }}
         {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
