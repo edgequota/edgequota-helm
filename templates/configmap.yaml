@@ -41,6 +41,9 @@ data:
       {{- with .Values.edgequota.server.websocketIdleTimeout }}
       websocket_idle_timeout: {{ . | quote }}
       {{- end }}
+      {{- if .Values.edgequota.server.bypassPreflightAuth }}
+      bypass_preflight_auth: true
+      {{- end }}
       {{- if .Values.edgequota.server.tls.enabled }}
       tls:
         enabled: true

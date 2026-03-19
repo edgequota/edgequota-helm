@@ -553,6 +553,10 @@ edgequota:
     maxWebsocketTransferBytes: 0
     # -- WebSocket idle timeout — close connections with no activity
     websocketIdleTimeout: ""
+    # -- Skip auth and rate limiting for CORS preflight requests (OPTIONS with
+    # Origin + Access-Control-Request-Method). The request is still proxied to
+    # the backend, which remains responsible for CORS headers.
+    bypassPreflightAuth: false
 
     tls:
       # -- Enable TLS on the proxy listener
