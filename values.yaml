@@ -593,8 +593,9 @@ edgequota:
     port: 9090
     # -- Admin read timeout
     readTimeout: "5s"
-    # -- Admin write timeout
-    writeTimeout: "10s"
+    # -- Admin write timeout. Must exceed pprof.Profile / pprof.Trace
+    # max duration (default 30s) — otherwise long profiles get truncated.
+    writeTimeout: "60s"
     # -- Admin idle timeout
     idleTimeout: "30s"
 
