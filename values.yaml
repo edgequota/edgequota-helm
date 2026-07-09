@@ -172,7 +172,7 @@ readinessProbe:
 #   1. Proxy service — port 80 (no TLS) or 443 (TLS) → container port 8080.
 #      Type and LB options are configurable below.
 #   2. Admin service — always ClusterIP on the admin container port (default 9090).
-#      Serves health probes, readiness, and Prometheus metrics.
+#      Serves health probes, readiness, /v1/config, /v1/stats, and pprof.
 service:
   # -- Proxy service type: ClusterIP, NodePort, LoadBalancer
   type: ClusterIP
@@ -304,32 +304,6 @@ podDisruptionBudget:
   maxUnavailable: 1
   # -- Unhealthy pod eviction policy (AlwaysAllow or IfHealthy)
   unhealthyPodEvictionPolicy: ""
-
-# =============================================================================
-# Metrics & Monitoring
-# =============================================================================
-metrics:
-  # -- Enable Prometheus annotations on pods
-  enabled: true
-  serviceMonitor:
-    # -- Create a ServiceMonitor resource (requires prometheus-operator CRDs)
-    enabled: false
-    # -- Namespace for the ServiceMonitor (defaults to release namespace)
-    namespace: ""
-    # -- Additional labels for the ServiceMonitor
-    labels: {}
-    # -- Annotations on the ServiceMonitor
-    annotations: {}
-    # -- Scrape interval
-    interval: "30s"
-    # -- Scrape timeout
-    scrapeTimeout: "10s"
-    # -- Honor labels from the target
-    honorLabels: false
-    # -- Metric relabelings
-    metricRelabelings: []
-    # -- Relabelings
-    relabelings: []
 
 # =============================================================================
 # Network Policy
@@ -1082,6 +1056,13 @@ edgequota:
     format: "json"
     # -- Emit per-request access logs (method, path, status, duration, etc.)
     accessLogEnabled: true
+
+  # --- Metrics ---
+  metrics:
+    # -- Enable first-party OpenTelemetry metrics. Pushed over OTLP to the
+    # -- collector (sharing the tracing transport: endpoint/protocol/insecure);
+    # -- there is no Prometheus /metrics scrape endpoint. Independent of tracing.
+    enabled: true
 
   # --- Tracing (optional) ---
   tracing:

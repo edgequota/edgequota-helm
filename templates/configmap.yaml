@@ -572,6 +572,12 @@ data:
       {{- end }}
     {{- end }}
 
+    # --- Metrics (first-party OpenTelemetry, pushed over OTLP) ---
+    {{- if not (kindIs "invalid" .Values.edgequota.metrics.enabled) }}
+    metrics:
+      enabled: {{ .Values.edgequota.metrics.enabled }}
+    {{- end }}
+
   {{- with .Values.edgequota.extraConfig }}
   {{- toYaml . | nindent 4 }}
   {{- end }}
