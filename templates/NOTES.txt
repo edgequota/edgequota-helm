@@ -23,7 +23,7 @@ Admin endpoint ({{ include "edgequota.fullname" . }}-admin service, always Clust
 
   Health:    http://localhost:{{ include "edgequota.adminPort" . }}/healthz
   Ready:     http://localhost:{{ include "edgequota.adminPort" . }}/readyz
-  Metrics:   http://localhost:{{ include "edgequota.adminPort" . }}/metrics
+  Stats:     http://localhost:{{ include "edgequota.adminPort" . }}/v1/stats
   Config:    http://localhost:{{ include "edgequota.adminPort" . }}/v1/config
 {{- if .Values.edgequota.cache.enabled }}
 
