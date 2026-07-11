@@ -108,6 +108,13 @@ spec:
               containerPort: {{ include "edgequota.adminPort" . }}
               protocol: TCP
           env:
+            # Per-replica identity for the OTel service.instance.id resource
+            # attribute, so each pod's metric streams stay distinct instead of
+            # merging into one series (which mis-computes cumulative-counter rates).
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
             {{- if .Values.secrets.create }}
             {{- if .Values.secrets.redisPassword }}
             - name: EDGEQUOTA_REDIS_PASSWORD
